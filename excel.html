@@ -1,0 +1,286 @@
+﻿<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover"
+        name="viewport">
+    <title>辅助工具</title>
+    <link href="https://jct-shopping-hz.oss-cn-hangzhou.aliyuncs.com/clouFile/6bdceba9-475c-4f2b-a80d-b13dc2ee1a2d.jpeg"
+        rel="icon">
+    <script src="https://unpkg.com/vue@next"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <script src="https://unpkg.com/element-plus"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <el-scrollbar>
+            <el-row :gutter="20">
+                <el-col :span="12">
+                    <el-card class="box-card">
+                        <template #header>
+                            <div class="card-header">
+                                <span>将excel的一列转成你想要的，方便直接复制</span>
+                            </div>
+                        </template>
+                        <template #default>
+                            <el-input v-model="textareaValue1" autosize type="textarea"
+                                placeholder="赶紧放进去！！！"></el-input>
+                            <el-input class="input" v-model="qzValue" autosize type="textarea"
+                                placeholder="前缀！！！"></el-input>
+                            <transition name="el-zoom-in-center">
+                                <div class="m-top" v-if="result1">结果：{{result1}}</div>
+                            </transition>
+                            <div class="m-top">
+                                <button class="btn" @click="changeArr">
+                                    <span>转成数组</span>
+                                </button>
+                                <button class="btn" @click="changeArrDYH">
+                                    <span>转成带单引号数组</span>
+                                </button>
+                                <button class="btn" @click="changeArrYH">
+                                    <span>转成带引号数组</span>
+                                </button>
+                                <button class="btn" @click="changeArrQZ">
+                                    <span>加前缀</span>
+                                </button>
+                            </div>
+                        </template>
+                    </el-card>
+                </el-col>
+                <el-col :span="12">
+                    <el-card class="box-card">
+                        <template #header>
+                            <div class="card-header">
+                                <span>将excel的一列转成你想要的，方便直接复制</span>
+                            </div>
+                        </template>
+                        <template #default>
+                            <el-input v-model="textareaValue2" autosize type="textarea"
+                                placeholder="赶紧放进去！！！"></el-input></el-input>
+                            <transition name="el-zoom-in-center">
+                                <div class="m-top" v-if="result2">结果：{{result2}}</div>
+                            </transition>
+                            <div class="m-top">
+                                <!-- <el-button type="success" @click="changeNumAdd">转成数字相加</el-button> -->
+                                <button class="btn" @click="changeNumAdd">
+                                    <span>转成数字相加</span>
+                                </button>
+                            </div>
+                        </template>
+                    </el-card>
+                </el-col>
+            </el-row>
+        </el-scrollbar>
+    </div>
+
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    textareaValue1: '',
+                    textareaValue2: '',
+                    qzValue: "",
+                    result1: '',
+                    result2: '',
+                    show: true
+                };
+            },
+            created() {
+                this.getBingImg()
+            },
+            methods: {
+                //获取必应壁纸
+                getBingImg() {
+                    const config = {
+                        headers: {
+                            'Access-Control-Allow-Method': 'POST,GET',
+                            'Access-Control-Allow-Credentials': true,
+                            'Access-Control-Allow-Headers': '*',
+                            'Access-Control-Allow-Methods': ' POST, GET, OPTIONS, DELETE',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    };
+                    axios.get('https://www.hellolin.cn/api-hello/bing', config)
+                        .then(res => console.log(res))
+                        .catch(err => console.log(err))
+                    return
+                    axios({
+                        url: 'https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN',
+                        method: 'get',
+                        data: {},
+                        config: {
+                            headers: {
+                                'Access-Control-Allow-Origin': '*'
+                            }
+                        }
+
+                    }).then(function (res) {
+                        console.log(res);
+                    });
+                },
+                // 带前缀
+                changeArrQZ() {
+                    var arr = this.textareaValue1.split(/\n/ig)
+                    var qz = this.qzValue
+                    var newArr = []
+                    for (const i in arr) {
+                        newArr.push(qz + arr[i])
+                    }
+                    this.copyToClipboard(newArr.toString())
+                    this.result1 = newArr.toString()
+                },
+                // 带单引号数组
+                changeArrDYH() {
+                    const values = this.textareaValue1.split(/\n/ig); // 分割字符串成数组
+                    const formattedValues = values.map(value => `'${value}'`); // 加上双引号
+                    const result = formattedValues.join(", "); // 使用逗号连接数组元素
+                    this.copyToClipboard(result)
+                    this.result1 = result
+                },
+                // 带引号数组
+                changeArrYH() {
+                    const values = this.textareaValue1.split(/\n/ig); // 分割字符串成数组
+                    const formattedValues = values.map(value => `"${value}"`); // 加上双引号
+                    const result = formattedValues.join(", "); // 使用逗号连接数组元素
+                    this.copyToClipboard(result)
+                    this.result1 = result
+                },
+                //转成数组
+                changeArr() {
+                    var arr = this.textareaValue1.split(/\n/ig)
+                    this.copyToClipboard(arr.toString())
+                    this.result1 = arr.toString()
+                },
+                //转成数字并相加
+                changeNumAdd() {
+                    var num = 0
+                    var value = this.textareaValue2
+                    var arr = value.split(',')
+                    for (const i in arr) {
+                        console.log(arr[i]);
+                        num += Number(arr[i])
+                    }
+                    this.copyToClipboard(num)
+                    this.result2 = num
+
+                },
+                //复制到剪切板
+                copyToClipboard(str) {
+                    const el = document.createElement('textarea');
+                    el.value = str;
+                    el.setAttribute('readonly', '');
+                    el.style.position = 'absolute';
+                    el.style.left = '-9999px';
+                    document.body.appendChild(el);
+                    const selected =
+                        document.getSelection().rangeCount > 0 ? document.getSelection().getRangeAt(0) : false;
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                    if (selected) {
+                        document.getSelection().removeAllRanges();
+                        document.getSelection().addRange(selected);
+                    }
+                }
+            }
+
+        });
+        app.use(ElementPlus);
+        app.mount("#app");
+
+    </script>
+
+</body>
+<style>
+    html,
+    body,
+    #app {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        background-image: url('https://www.hellolin.cn/api-hello/bing');
+        background-size: 100% 100%;
+    }
+
+    .input {
+        margin-top: 10px;
+    }
+
+    .m-top {
+        margin-top: 10px;
+    }
+
+    .el-row {
+        margin: 0 !important;
+        padding-top: 10px;
+    }
+
+    .btn {
+        border: none;
+        position: relative;
+        width: 200px;
+        height: 73px;
+        padding: 0;
+        z-index: 2;
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
+        -webkit-mask-size: 100%;
+        cursor: pointer;
+        background-color: transparent;
+        transform: translateY(8px)
+    }
+
+    .btn:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        box-shadow: 0px 0 0 0 white;
+        transition: all 2s ease;
+    }
+
+    .btn:hover:after {
+        box-shadow: 0px -13px 56px 12px #ffffffa6;
+    }
+
+    .btn span {
+        position: absolute;
+        width: 100%;
+        font-size: 15px;
+        font-weight: 100;
+        left: 50%;
+        top: 39%;
+        letter-spacing: 3px;
+        text-align: center;
+        transform: translate(-50%, -50%);
+        color: black;
+        transition: all 2s ease;
+    }
+
+    .btn:hover span {
+        color: white;
+    }
+
+    .btn:before {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 100%;
+        background-color: black;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        transition: all 1s ease;
+    }
+
+    .btn:hover:before {
+        width: 100%;
+    }
+</style>
+
+</html>
