@@ -9,10 +9,12 @@
     <title>辅助工具</title>
     <link href="https://jct-shopping-hz.oss-cn-hangzhou.aliyuncs.com/clouFile/6bdceba9-475c-4f2b-a80d-b13dc2ee1a2d.jpeg"
         rel="icon">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
-    <script src="https://unpkg.com/element-plus"></script>
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <!-- <script src="https://unpkg.com/vue@next"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.13/vue.global.min.js"></script>
+    <!-- <link rel="stylesheet" href="https://jct-shopping-hz.oss-cn-hangzhou.aliyuncs.com/vue/index.css"> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.4.4/index.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.4.4/index.full.js"></script>
+    <!-- <script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
 </head>
 
 <body>
@@ -90,38 +92,9 @@
                 };
             },
             created() {
-                this.getBingImg()
             },
             methods: {
-                //获取必应壁纸
-                getBingImg() {
-                    const config = {
-                        headers: {
-                            'Access-Control-Allow-Method': 'POST,GET',
-                            'Access-Control-Allow-Credentials': true,
-                            'Access-Control-Allow-Headers': '*',
-                            'Access-Control-Allow-Methods': ' POST, GET, OPTIONS, DELETE',
-                            'Access-Control-Allow-Origin': '*'
-                        }
-                    };
-                    axios.get('https://www.hellolin.cn/api-hello/bing', config)
-                        .then(res => console.log(res))
-                        .catch(err => console.log(err))
-                    return
-                    axios({
-                        url: 'https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN',
-                        method: 'get',
-                        data: {},
-                        config: {
-                            headers: {
-                                'Access-Control-Allow-Origin': '*'
-                            }
-                        }
 
-                    }).then(function (res) {
-                        console.log(res);
-                    });
-                },
                 // 带前缀
                 changeArrQZ() {
                     var arr = this.textareaValue1.split(/\n/ig)
@@ -202,7 +175,7 @@
         height: 100%;
         padding: 0;
         margin: 0;
-        background-image: url('https://blog.csdn.net/qq_57892905/article/details/128166939');
+        background-image: url('https://api.dujin.org/bing/1920.php');
         background-size: 100% 100%;
     }
 
