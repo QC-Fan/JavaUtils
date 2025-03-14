@@ -1,21 +1,17 @@
-﻿
-<!doctype html>
-<html>
+﻿<!doctype html>
+<html lang="zh-CN">
 
 <head>
     <meta charset="utf-8">
     <meta content="IE=edge" http-equiv="X-UA-Compatible">
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover"
         name="viewport">
-    <title>辅助工具</title>
+    <title>数据转换工具</title>
     <link href="https://jct-shopping-hz.oss-cn-hangzhou.aliyuncs.com/clouFile/6bdceba9-475c-4f2b-a80d-b13dc2ee1a2d.jpeg"
         rel="icon">
-    <!-- <script src="https://unpkg.com/vue@next"></script> -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.13/vue.global.min.js"></script>
-    <!-- <link rel="stylesheet" href="https://jct-shopping-hz.oss-cn-hangzhou.aliyuncs.com/vue/index.css"> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.13/vue.global.prod.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.4.4/index.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.4.4/index.full.js"></script>
-    <!-- <script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.4.4/index.full.min.js"></script>
 </head>
 
 <body>
@@ -26,33 +22,47 @@
                     <el-card class="box-card">
                         <template #header>
                             <div class="card-header">
-                                <span>将excel的一列转成你想要的，方便直接复制</span>
+                                <span>Excel列数据转换工具</span>
                             </div>
                         </template>
                         <template #default>
-                            <el-input v-model="textareaValue1" autosize type="textarea"
-                                placeholder="赶紧放进去！！！"></el-input>
+                            <el-input v-model="textareaValue1" autosize type="textarea" 
+                                placeholder="请输入要转换的数据，每行一条数据"
+                                @input="handleInput1"></el-input>
                             <el-input class="input" v-model="qzValue" autosize type="textarea"
-                                placeholder="前缀！！！"></el-input>
+                                placeholder="请输入要添加的前缀"></el-input>
                             <transition name="el-zoom-in-center">
-                                <div class="m-top" v-if="result1">结果：{{result1}}</div>
+                                <div v-if="result1" class="result-box">
+                                    <div class="result-title">转换结果：</div>
+                                    <div class="result-content">{{result1}}</div>
+                                </div>
                             </transition>
-                            <div class="m-top">
-                                <button class="btn" @click="changeArr">
-                                    <span>转成数组</span>
-                                </button>
-                                <button class="btn" @click="changeArrDYH">
-                                    <span>转成带单引号数组</span>
-                                </button>
-                                <button class="btn" @click="changeArrYH">
-                                    <span>转成带引号数组</span>
-                                </button>
-                                <button class="btn" @click="changeArrQZ">
-                                    <span>加前缀</span>
-                                </button>
-                                <button class="btn" @click="changeArrQC">
-                                    <span>去重</span>
-                                </button>
+                            <div class="button-group">
+                                <el-tooltip content="将数据转换为逗号分隔的数组" placement="top">
+                                    <button class="btn" @click="handleTransform('array')">
+                                        <span>转成数组</span>
+                                    </button>
+                                </el-tooltip>
+                                <el-tooltip content="将每个元素添加单引号" placement="top">
+                                    <button class="btn" @click="handleTransform('singleQuote')">
+                                        <span>转成带单引号数组</span>
+                                    </button>
+                                </el-tooltip>
+                                <el-tooltip content="将每个元素添加双引号" placement="top">
+                                    <button class="btn" @click="handleTransform('doubleQuote')">
+                                        <span>转成带引号数组</span>
+                                    </button>
+                                </el-tooltip>
+                                <el-tooltip content="为每个元素添加前缀" placement="top">
+                                    <button class="btn" @click="handleTransform('prefix')">
+                                        <span>加前缀</span>
+                                    </button>
+                                </el-tooltip>
+                                <el-tooltip content="删除重复数据" placement="top">
+                                    <button class="btn" @click="handleTransform('unique')">
+                                        <span>去重</span>
+                                    </button>
+                                </el-tooltip>
                             </div>
                         </template>
                     </el-card>
@@ -61,20 +71,25 @@
                     <el-card class="box-card">
                         <template #header>
                             <div class="card-header">
-                                <span>将excel的一列转成你想要的，方便直接复制</span>
+                                <span>数值计算工具</span>
                             </div>
                         </template>
                         <template #default>
                             <el-input v-model="textareaValue2" autosize type="textarea"
-                                placeholder="赶紧放进去！！！"></el-input></el-input>
+                                placeholder="请输入要计算的数字，用逗号分隔"
+                                @input="handleInput2"></el-input>
                             <transition name="el-zoom-in-center">
-                                <div class="m-top" v-if="result2">结果：{{result2}}</div>
+                                <div v-if="result2" class="result-box">
+                                    <div class="result-title">计算结果：</div>
+                                    <div class="result-content">{{result2}}</div>
+                                </div>
                             </transition>
-                            <div class="m-top">
-                                <!-- <el-button type="success" @click="changeNumAdd">转成数字相加</el-button> -->
-                                <button class="btn" @click="changeNumAdd">
-                                    <span>转成数字相加</span>
-                                </button>
+                            <div class="button-group">
+                                <el-tooltip content="计算所有数字的和" placement="top">
+                                    <button class="btn" @click="handleCalculate('sum')">
+                                        <span>数字求和</span>
+                                    </button>
+                                </el-tooltip>
                             </div>
                         </template>
                     </el-card>
@@ -84,83 +99,21 @@
     </div>
 
     <script>
-        const app = Vue.createApp({
-            data() {
-                return {
-                    textareaValue1: '',
-                    textareaValue2: '',
-                    qzValue: "",
-                    result1: '',
-                    result2: '',
-                    show: true
-                };
-            },
-            created() {
-            },
-            methods: {
-                // 去重
-                changeArrQC() {
-                    var arr = this.textareaValue1.split(/\n/ig)
-                    var newArr = Array.from(new Set(arr))
-                    this.copyToClipboard(newArr.toString())
-                    this.result1 = newArr.toString()
-                },
-                // 带前缀
-                changeArrQZ() {
-                    var arr = this.textareaValue1.split(/\n/ig)
-                    var qz = this.qzValue
-                    var newArr = []
-                    for (const i in arr) {
-                        newArr.push(qz + arr[i])
-                    }
-                    this.copyToClipboard(newArr.toString())
-                    this.result1 = newArr.toString()
-                },
-                // 带单引号数组
-                changeArrDYH() {
-                    const values = this.textareaValue1.split(/\n/ig); // 分割字符串成数组
-                    const formattedValues = values.map(value => `'${value}'`); // 加上双引号
-                    const result = formattedValues.join(", "); // 使用逗号连接数组元素
-                    this.copyToClipboard(result)
-                    this.result1 = result
-                },
-                // 带引号数组
-                changeArrYH() {
-                    const values = this.textareaValue1.split(/\n/ig); // 分割字符串成数组
-                    const formattedValues = values.map(value => `"${value}"`); // 加上双引号
-                    const result = formattedValues.join(", "); // 使用逗号连接数组元素
-                    this.copyToClipboard(result)
-                    this.result1 = result
-                },
-                //转成数组
-                changeArr() {
-                    var arr = this.textareaValue1.split(/\n/ig)
-                    this.copyToClipboard(arr.toString())
-                    this.result1 = arr.toString()
-                },
-                //转成数字并相加
-                changeNumAdd() {
-                    var num = 0
-                    var value = this.textareaValue2
-                    var arr = value.split(',')
-                    for (const i in arr) {
-                        console.log(arr[i]);
-                        num += Number(arr[i])
-                    }
-                    this.copyToClipboard(num)
-                    this.result2 = num
-
-                },
-                //复制到剪切板
-                copyToClipboard(str) {
+        const { createApp, ref, reactive } = Vue;
+        
+        // 工具函数
+        const utils = {
+            copyToClipboard(text) {
+                try {
                     const el = document.createElement('textarea');
-                    el.value = str;
+                    el.value = text;
                     el.setAttribute('readonly', '');
                     el.style.position = 'absolute';
                     el.style.left = '-9999px';
                     document.body.appendChild(el);
-                    const selected =
-                        document.getSelection().rangeCount > 0 ? document.getSelection().getRangeAt(0) : false;
+                    const selected = document.getSelection().rangeCount > 0 
+                        ? document.getSelection().getRangeAt(0) 
+                        : false;
                     el.select();
                     document.execCommand('copy');
                     document.body.removeChild(el);
@@ -168,102 +121,243 @@
                         document.getSelection().removeAllRanges();
                         document.getSelection().addRange(selected);
                     }
+                    ElementPlus.ElMessage.success('已复制到剪贴板');
+                } catch (err) {
+                    console.error('复制失败:', err);
+                    ElementPlus.ElMessage.error('复制失败，请手动复制');
                 }
-            }
+            },
 
+            // 数据验证
+            validateInput(value, type = 'text') {
+                if (!value || value.trim() === '') {
+                    throw new Error('请输入数据');
+                }
+                if (type === 'number') {
+                    const numbers = value.split(',').map(n => n.trim());
+                    if (numbers.some(n => isNaN(Number(n)))) {
+                        throw new Error('请输入有效的数字，并用逗号分隔');
+                    }
+                }
+                return true;
+            }
+        };
+
+        const app = createApp({
+            setup() {
+                // 响应式数据
+                const state = reactive({
+                    textareaValue1: '',
+                    textareaValue2: '',
+                    qzValue: '',
+                    result1: '',
+                    result2: ''
+                });
+
+                // 输入处理
+                const handleInput1 = (value) => {
+                    state.result1 = '';
+                };
+
+                const handleInput2 = (value) => {
+                    state.result2 = '';
+                };
+
+                // 数据转换处理
+                const handleTransform = (type) => {
+                    try {
+                        utils.validateInput(state.textareaValue1);
+                        const lines = state.textareaValue1.split(/\n/).filter(line => line.trim());
+                        let result;
+
+                        switch (type) {
+                            case 'array':
+                                result = lines.join(',');
+                                break;
+                            case 'singleQuote':
+                                result = lines.map(line => `'${line}'`).join(', ');
+                                break;
+                            case 'doubleQuote':
+                                result = lines.map(line => `"${line}"`).join(', ');
+                                break;
+                            case 'prefix':
+                                if (!state.qzValue) {
+                                    throw new Error('请输入前缀');
+                                }
+                                result = lines.map(line => `${state.qzValue}${line}`).join(', ');
+                                break;
+                            case 'unique':
+                                result = Array.from(new Set(lines)).join(', ');
+                                break;
+                        }
+
+                        state.result1 = result;
+                        utils.copyToClipboard(result);
+                    } catch (err) {
+                        ElementPlus.ElMessage.error(err.message);
+                    }
+                };
+
+                // 数值计算处理
+                const handleCalculate = (type) => {
+                    try {
+                        utils.validateInput(state.textareaValue2, 'number');
+                        const numbers = state.textareaValue2.split(',')
+                            .map(n => n.trim())
+                            .map(Number);
+
+                        let result;
+                        switch (type) {
+                            case 'sum':
+                                result = numbers.reduce((sum, num) => sum + num, 0);
+                                break;
+                        }
+
+                        state.result2 = result;
+                        utils.copyToClipboard(result.toString());
+                    } catch (err) {
+                        ElementPlus.ElMessage.error(err.message);
+                    }
+                };
+
+                return {
+                    ...state,
+                    handleInput1,
+                    handleInput2,
+                    handleTransform,
+                    handleCalculate
+                };
+            }
         });
+
         app.use(ElementPlus);
         app.mount("#app");
-
     </script>
 
-</body>
-<style>
-    html,
-    body,
-    #app {
-        height: 100%;
-        padding: 0;
-        margin: 0;
-        background-image: url('https://api.dujin.org/bing/1920.php');
-        background-size: 100% 100%;
-    }
+    <style>
+        html,
+        body,
+        #app {
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            background-image: url('https://api.dujin.org/bing/1920.php');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
 
-    .input {
-        margin-top: 10px;
-    }
+        .el-row {
+            margin: 0 !important;
+            padding: 20px;
+        }
 
-    .m-top {
-        margin-top: 10px;
-    }
+        .box-card {
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 15px;
+        }
 
-    .el-row {
-        margin: 0 !important;
-        padding-top: 10px;
-    }
+        .card-header {
+            font-size: 18px;
+            font-weight: bold;
+        }
 
-    .btn {
-        border: none;
-        position: relative;
-        width: 200px;
-        height: 73px;
-        padding: 0;
-        z-index: 2;
-        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
-        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
-        -webkit-mask-size: 100%;
-        cursor: pointer;
-        background-color: transparent;
-        transform: translateY(8px)
-    }
+        .input {
+            margin-top: 15px;
+        }
 
-    .btn:after {
-        content: '';
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        box-shadow: 0px 0 0 0 white;
-        transition: all 2s ease;
-    }
+        .result-box {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        }
 
-    .btn:hover:after {
-        box-shadow: 0px -13px 56px 12px #ffffffa6;
-    }
+        .result-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
 
-    .btn span {
-        position: absolute;
-        width: 100%;
-        font-size: 15px;
-        font-weight: 100;
-        left: 50%;
-        top: 39%;
-        letter-spacing: 3px;
-        text-align: center;
-        transform: translate(-50%, -50%);
-        color: black;
-        transition: all 2s ease;
-    }
+        .result-content {
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
 
-    .btn:hover span {
-        color: white;
-    }
+        .button-group {
+            margin-top: 15px;
+        }
 
-    .btn:before {
-        content: '';
-        position: absolute;
-        width: 0;
-        height: 100%;
-        background-color: black;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        transition: all 1s ease;
-    }
+        .btn {
+            border: none;
+            position: relative;
+            width: 200px;
+            height: 73px;
+            padding: 0;
+            z-index: 2;
+            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
+            -webkit-mask-size: 100%;
+            cursor: pointer;
+            background-color: transparent;
+            transform: translateY(8px)
+        }
 
-    .btn:hover:before {
-        width: 100%;
-    }
-</style>
+        .btn:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            box-shadow: 0px 0 0 0 white;
+            transition: all 2s ease;
+        }
 
+        .btn:hover:after {
+            box-shadow: 0px -13px 56px 12px #ffffffa6;
+        }
+
+        .btn span {
+            position: absolute;
+            width: 100%;
+            font-size: 15px;
+            font-weight: 100;
+            left: 50%;
+            top: 39%;
+            letter-spacing: 3px;
+            text-align: center;
+            transform: translate(-50%, -50%);
+            color: black;
+            transition: all 2s ease;
+        }
+
+        .btn:hover span {
+            color: white;
+        }
+
+        .btn:before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 100%;
+            background-color: black;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 1s ease;
+        }
+
+        .btn:hover:before {
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .el-col {
+                width: 100% !important;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
 </html>
