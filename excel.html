@@ -1,4 +1,5 @@
-﻿<!doctype html>
+﻿
+<!doctype html>
 <html>
 
 <head>
@@ -6,7 +7,7 @@
     <meta content="IE=edge" http-equiv="X-UA-Compatible">
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover"
         name="viewport">
-    <title>辅助工具1</title>
+    <title>辅助工具</title>
     <link href="https://jct-shopping-hz.oss-cn-hangzhou.aliyuncs.com/clouFile/6bdceba9-475c-4f2b-a80d-b13dc2ee1a2d.jpeg"
         rel="icon">
     <!-- <script src="https://unpkg.com/vue@next"></script> -->
@@ -48,6 +49,9 @@
                                 </button>
                                 <button class="btn" @click="changeArrQZ">
                                     <span>加前缀</span>
+                                </button>
+                                <button class="btn" @click="changeArrQC">
+                                    <span>去重</span>
                                 </button>
                             </div>
                         </template>
@@ -94,7 +98,13 @@
             created() {
             },
             methods: {
-
+                // 去重
+                changeArrQC() {
+                    var arr = this.textareaValue1.split(/\n/ig)
+                    var newArr = Array.from(new Set(arr))
+                    this.copyToClipboard(newArr.toString())
+                    this.result1 = newArr.toString()
+                },
                 // 带前缀
                 changeArrQZ() {
                     var arr = this.textareaValue1.split(/\n/ig)
