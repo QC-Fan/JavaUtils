@@ -99,7 +99,7 @@
     </div>
 
     <script>
-        const { createApp, ref, reactive } = Vue;
+        const { createApp, ref, reactive, toRefs } = Vue;
         
         // 工具函数
         const utils = {
@@ -221,7 +221,7 @@
                 };
 
                 return {
-                    ...state,
+                    ...toRefs(state),
                     handleInput1,
                     handleInput2,
                     handleTransform,
