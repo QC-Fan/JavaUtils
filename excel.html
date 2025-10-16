@@ -95,6 +95,75 @@
                     </el-card>
                 </el-col>
             </el-row>
+
+            <!-- 新增 SQL 语句生成器 -->
+            <el-row :gutter="20">
+                <el-col :span="24">
+                    <el-card class="box-card">
+                        <template #header>
+                            <div class="card-header">
+                                <span>SQL 语句生成器</span>
+                            </div>
+                        </template>
+                        <template #default>
+                            <el-row :gutter="15">
+                                <el-col :span="12">
+                                    <el-input 
+                                        v-model="sqlConfig.tableName" 
+                                        placeholder="请输入表名，例如：users"
+                                        class="input">
+                                        <template #prepend>表名</template>
+                                    </el-input>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-input 
+                                        v-model="sqlConfig.columns" 
+                                        placeholder="请输入字段名，多个用逗号分隔，例如：id, name, age"
+                                        class="input">
+                                        <template #prepend>字段</template>
+                                    </el-input>
+                                </el-col>
+                            </el-row>
+                            <el-input 
+                                v-model="sqlData" 
+                                :autosize="{ minRows: 4, maxRows: 8 }" 
+                                type="textarea"
+                                placeholder="请输入数据，每行一条记录&#10;&#10;示例1 - 生成INSERT（多列数据用逗号分隔）：&#10;张三,25,北京&#10;李四,30,上海&#10;&#10;示例2 - 生成IN查询（单列ID）：&#10;1001&#10;1002&#10;1003"
+                                class="input"
+                                @input="handleSqlInput">
+                            </el-input>
+                            <transition name="el-zoom-in-center">
+                                <div v-if="sqlResult" class="result-box sql-result">
+                                    <div class="result-title">生成的SQL语句：</div>
+                                    <div class="result-content sql-content">{{sqlResult}}</div>
+                                </div>
+                            </transition>
+                            <div class="button-group">
+                                <el-tooltip content="生成INSERT语句，适合批量插入数据" placement="top">
+                                    <button class="btn" @click="generateSQL('insert')">
+                                        <span>生成INSERT</span>
+                                    </button>
+                                </el-tooltip>
+                                <el-tooltip content="生成UPDATE语句，适合批量更新数据" placement="top">
+                                    <button class="btn" @click="generateSQL('update')">
+                                        <span>生成UPDATE</span>
+                                    </button>
+                                </el-tooltip>
+                                <el-tooltip content="生成IN条件，适合批量查询" placement="top">
+                                    <button class="btn" @click="generateSQL('in')">
+                                        <span>生成IN查询</span>
+                                    </button>
+                                </el-tooltip>
+                                <el-tooltip content="生成DELETE语句，适合批量删除数据" placement="top">
+                                    <button class="btn" @click="generateSQL('delete')">
+                                        <span>生成DELETE</span>
+                                    </button>
+                                </el-tooltip>
+                            </div>
+                        </template>
+                    </el-card>
+                </el-col>
+            </el-row>
         </el-scrollbar>
     </div>
 
@@ -151,7 +220,14 @@
                     textareaValue2: '',
                     qzValue: '',
                     result1: '',
-                    result2: ''
+                    result2: '',
+                    // SQL 生成器相关
+                    sqlData: '',
+                    sqlResult: '',
+                    sqlConfig: {
+                        tableName: '',
+                        columns: ''
+                    }
                 });
 
                 // 输入处理
@@ -161,6 +237,10 @@
 
                 const handleInput2 = (value) => {
                     state.result2 = '';
+                };
+
+                const handleSqlInput = (value) => {
+                    state.sqlResult = '';
                 };
 
                 // 数据转换处理
@@ -220,12 +300,97 @@
                     }
                 };
 
+                // SQL 生成处理
+                const generateSQL = (type) => {
+                    try {
+                        utils.validateInput(state.sqlData);
+                        
+                        const lines = state.sqlData.split(/\n/).filter(line => line.trim());
+                        let result = '';
+
+                        switch (type) {
+                            case 'insert':
+                                if (!state.sqlConfig.tableName) {
+                                    throw new Error('请输入表名');
+                                }
+                                if (!state.sqlConfig.columns) {
+                                    throw new Error('请输入字段名');
+                                }
+                                const columns = state.sqlConfig.columns.split(',').map(c => c.trim());
+                                result = lines.map(line => {
+                                    const values = line.split(',').map(v => {
+                                        const trimmed = v.trim();
+                                        // 判断是否为数字
+                                        return isNaN(trimmed) ? `'${trimmed}'` : trimmed;
+                                    }).join(', ');
+                                    return `INSERT INTO ${state.sqlConfig.tableName} (${state.sqlConfig.columns}) VALUES (${values});`;
+                                }).join('\n');
+                                break;
+
+                            case 'update':
+                                if (!state.sqlConfig.tableName) {
+                                    throw new Error('请输入表名');
+                                }
+                                if (!state.sqlConfig.columns) {
+                                    throw new Error('请输入字段名（格式：更新字段=值,条件字段）');
+                                }
+                                const parts = state.sqlConfig.columns.split(',').map(c => c.trim());
+                                if (parts.length < 2) {
+                                    throw new Error('请输入正确格式（例如：status=已完成,id）');
+                                }
+                                const updateClause = parts[0];
+                                const whereColumn = parts[1];
+                                result = lines.map(line => {
+                                    const value = line.trim();
+                                    const whereValue = isNaN(value) ? `'${value}'` : value;
+                                    return `UPDATE ${state.sqlConfig.tableName} SET ${updateClause} WHERE ${whereColumn} = ${whereValue};`;
+                                }).join('\n');
+                                break;
+
+                            case 'in':
+                                if (!state.sqlConfig.tableName) {
+                                    throw new Error('请输入表名');
+                                }
+                                if (!state.sqlConfig.columns) {
+                                    throw new Error('请输入字段名');
+                                }
+                                const inValues = lines.map(line => {
+                                    const value = line.trim();
+                                    return isNaN(value) ? `'${value}'` : value;
+                                }).join(', ');
+                                result = `SELECT * FROM ${state.sqlConfig.tableName} WHERE ${state.sqlConfig.columns.trim()} IN (${inValues});`;
+                                break;
+
+                            case 'delete':
+                                if (!state.sqlConfig.tableName) {
+                                    throw new Error('请输入表名');
+                                }
+                                if (!state.sqlConfig.columns) {
+                                    throw new Error('请输入字段名');
+                                }
+                                result = lines.map(line => {
+                                    const value = line.trim();
+                                    const whereValue = isNaN(value) ? `'${value}'` : value;
+                                    return `DELETE FROM ${state.sqlConfig.tableName} WHERE ${state.sqlConfig.columns.trim()} = ${whereValue};`;
+                                }).join('\n');
+                                break;
+                        }
+
+                        state.sqlResult = result;
+                        utils.copyToClipboard(result);
+                    } catch (err) {
+                        ElementPlus.ElMessage.error(err.message);
+                    }
+                };
+
                 return {
                     ...toRefs(state),
                     handleInput1,
                     handleInput2,
+                    handleSqlInput,
                     handleTransform,
-                    handleCalculate
+                    handleCalculate,
+                    generateSQL
                 };
             }
         });
@@ -257,6 +422,7 @@
             background-color: rgba(255, 255, 255, 0.8);
             border: none;
             border-radius: 15px;
+            margin-bottom: 20px;
         }
 
         .card-header {
@@ -286,8 +452,25 @@
             white-space: pre-wrap;
         }
 
+        .sql-result {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .sql-content {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
         .button-group {
             margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .btn {
@@ -357,6 +540,11 @@
             .el-col {
                 width: 100% !important;
                 margin-bottom: 20px;
+            }
+            
+            .btn {
+                width: 150px;
+                height: 60px;
             }
         }
     </style>
