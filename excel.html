@@ -137,14 +137,20 @@
 
                                     <!-- 字段选择 -->
                                     <div class="field-selector">
-                                        <span class="selector-label">选择字段：</span>
-                                        <el-checkbox-group v-model="selectedColumns" @change="handleColumnSelect">
-                                            <el-checkbox v-for="col in excelColumns" :key="col" :label="col">
-                                                {{col}}
-                                            </el-checkbox>
-                                        </el-checkbox-group>
-                                        <el-button type="primary" size="small" @click="selectAllColumns(); handleColumnSelect();"
-                                            style="margin-left: 10px;">全选</el-button>
+                                        <div style="display: flex; align-items: center; width: 100%; gap: 10px;">
+                                            <span class="selector-label">选择字段：</span>
+                                            <el-checkbox-group v-model="selectedColumns" @change="handleColumnSelect" style="flex: 1;">
+                                                <el-checkbox v-for="col in excelColumns" :key="col" :label="col">
+                                                    {{col}}
+                                                </el-checkbox>
+                                            </el-checkbox-group>
+                                            <el-button type="primary" size="small" @click="selectAllColumns(); handleColumnSelect();">
+                                                全选
+                                            </el-button>
+                                        </div>
+                                        <div style="margin-top: 10px; font-size: 12px; color: #909399;">
+                                            💡 提示：复选框用于选择 Excel 的哪些列数据，生成的 SQL 字段名使用下方手动输入的字段名
+                                        </div>
                                     </div>
 
                                     <!-- 数据表格 -->
@@ -310,7 +316,6 @@
                         try {
                             const data = new Uint8Array(e.target.result);
                             const workbook = XLSX.read(data, { type: 'array' });
-                            console.log(workbook,99);
                             if (workbook.SheetNames.length === 0) {
                                 ElementPlus.ElMessage.error('Excel 文件为空或格式不正确');
                                 return;
@@ -339,42 +344,14 @@
 
                     try {
                         const worksheet = state.excelWorkbook.Sheets[sheetName];
-                        console.log('工作表对象:', worksheet);
-                        
-                        // 获取工作表的实际范围
-                        const range = XLSX.utils.decode_range(worksheet['!ref']);
-                        console.log('Excel 文件声明的范围:', worksheet['!ref']);
-                        console.log('起始行:', range.s.r, '结束行:', range.e.r);
-                        
-                        // 检查是否有隐藏行信息
-                        const hiddenRows = new Set();
-                        if (worksheet['!rows']) {
-                            worksheet['!rows'].forEach((rowInfo, idx) => {
-                                if (rowInfo && rowInfo.hidden) {
-                                    hiddenRows.add(idx);
-                                    console.log(`第 ${idx + 1} 行被隐藏`);
-                                }
-                            });
-                        }
-                        console.log('检测到隐藏行数量:', hiddenRows.size);
                         
                         // 使用 defval 选项确保空单元格也会被保留
                         // header: 1 选项先获取原始数据，包括表头
-                        let rawData = XLSX.utils.sheet_to_json(worksheet, { 
+                        const rawData = XLSX.utils.sheet_to_json(worksheet, { 
                             header: 1,
                             defval: '',  // 空单元格用空字符串填充
                             raw: false   // 保持原始格式
                         });
-
-                        console.log('读取到的总行数（包括表头）:', rawData.length);
-                        
-                        // 过滤掉隐藏的行
-                        if (hiddenRows.size > 0) {
-                            rawData = rawData.filter((row, idx) => {
-                                return !hiddenRows.has(idx);
-                            });
-                            console.log('过滤隐藏行后的行数:', rawData.length);
-                        }
 
                         if (rawData.length === 0) {
                             ElementPlus.ElMessage.warning(`工作表 "${sheetName}" 为空`);
@@ -382,28 +359,6 @@
                             state.excelColumns = [];
                             state.selectedColumns = [];
                             return;
-                        }
-
-                        // 找到最后一行有数据的位置（从后往前查找）
-                        let lastValidRow = rawData.length - 1;
-                        for (let i = rawData.length - 1; i >= 1; i--) {
-                            const row = rawData[i];
-                            const hasData = row && row.some(cell => {
-                                if (cell === null || cell === undefined || cell === '') return false;
-                                const strValue = String(cell).trim();
-                                return strValue !== '' && /\S/.test(strValue);
-                            });
-                            if (hasData) {
-                                lastValidRow = i;
-                                break;
-                            }
-                        }
-
-                        // 截断到最后有效行
-                        if (lastValidRow < rawData.length - 1) {
-                            console.log(`检测到最后有效行: ${lastValidRow + 1}, 截断前总行数: ${rawData.length}`);
-                            rawData = rawData.slice(0, lastValidRow + 1);
-                            console.log(`截断后行数: ${rawData.length}`);
                         }
 
                         // 第一行作为表头
@@ -419,54 +374,14 @@
 
                         // 从第二行开始是数据，转换为对象数组
                         const dataRows = rawData.slice(1);
-                        
-                        // 调试：查看原始数据
-                        console.log('原始数据行数:', dataRows.length);
-                        console.log('前5行原始数据:', dataRows.slice(0, 5));
-                        console.log('后5行原始数据:', dataRows.slice(-5));
-                        
-                        // 检查每一行的内容
-                        dataRows.forEach((row, idx) => {
-                            const rowStr = JSON.stringify(row);
-                            if (idx >= 15 && idx < 20) {
-                                console.log(`第 ${idx + 2} 行内容:`, rowStr, '长度:', rowStr.length);
-                            }
-                        });
-                        
-                        const jsonData = dataRows
-                            .map((row, rowIndex) => {
-                                const obj = {};
-                                validHeaders.forEach((header, idx) => {
-                                    // 确保每个字段都存在，即使是空值
-                                    obj[header] = row[idx] !== undefined && row[idx] !== null ? row[idx] : '';
-                                });
-                                obj._rowIndex = rowIndex + 2; // 加上表头行，用于调试
-                                return obj;
-                            })
-                            .filter(row => {
-                                // 过滤掉完全空白的行（所有字段都为空）
-                                const values = Object.entries(row)
-                                    .filter(([key]) => key !== '_rowIndex') // 排除调试字段
-                                    .map(([, value]) => value);
-                                
-                                const hasData = values.some(value => {
-                                    if (value === null || value === undefined) return false;
-                                    const strValue = String(value).trim();
-                                    // 更严格的判断：排除只有空格、制表符、换行符的情况
-                                    return strValue !== '' && strValue.length > 0 && /\S/.test(strValue);
-                                });
-                                
-                                if (!hasData) {
-                                    console.log(`过滤掉第 ${row._rowIndex} 行（空行）:`, row);
-                                }
-                                
-                                return hasData;
-                            })
-                            .map(row => {
-                                // 移除调试字段
-                                const { _rowIndex, ...cleanRow } = row;
-                                return cleanRow;
+                        const jsonData = dataRows.map(row => {
+                            const obj = {};
+                            validHeaders.forEach((header, idx) => {
+                                // 确保每个字段都存在，即使是空值
+                                obj[header] = row[idx] !== undefined && row[idx] !== null ? row[idx] : '';
                             });
+                            return obj;
+                        });
 
                         if (jsonData.length === 0) {
                             ElementPlus.ElMessage.warning(`工作表 "${sheetName}" 只有表头，没有数据`);
@@ -481,28 +396,7 @@
                         state.selectedColumns = [...validHeaders]; // 默认全选
                         state.currentSheet = sheetName;
 
-                        const totalRows = dataRows.length;
-                        const validRows = jsonData.length;
-                        const emptyRows = totalRows - validRows;
-
-                        console.log('加载的列名:', validHeaders);
-                        console.log('数据示例:', jsonData.slice(0, 3));
-                        console.log(`原始行数: ${totalRows}, 有效行数: ${validRows}, 空行数: ${emptyRows}`);
-
-                        // 构建提示信息
-                        let message = `已加载工作表 "${sheetName}"，共 ${validRows} 行有效数据`;
-                        const filters = [];
-                        if (hiddenRows.size > 0) {
-                            filters.push(`${hiddenRows.size} 行隐藏行`);
-                        }
-                        if (emptyRows > 0) {
-                            filters.push(`${emptyRows} 行空白行`);
-                        }
-                        if (filters.length > 0) {
-                            message += `（已过滤 ${filters.join('、')}）`;
-                        }
-                        
-                        ElementPlus.ElMessage.success(message);
+                        ElementPlus.ElMessage.success(`已加载工作表 "${sheetName}"，共 ${jsonData.length} 行数据`);
                     } catch (err) {
                         console.error('Sheet 加载失败:', err);
                         ElementPlus.ElMessage.error('工作表加载失败');
@@ -535,9 +429,9 @@
                 // 监听字段选择变化
                 const handleColumnSelect = () => {
                     // 当用户没有手动输入字段时，根据选择的列自动填充
-                    // if (state.excelColumns.length > 0 && state.selectedColumns.length > 0) {
-                    //     state.sqlConfig.columns = state.selectedColumns.join(', ');
-                    // }
+                    if (state.excelColumns.length > 0 && state.selectedColumns.length > 0) {
+                        state.sqlConfig.columns = state.selectedColumns.join(', ');
+                    }
                 };
 
                 // 数据转换处理
@@ -618,15 +512,36 @@
                             if (!state.sqlConfig.columns) {
                                 throw new Error('请输入字段名');
                             }
+                            
+                            if (state.selectedColumns.length === 0) {
+                                throw new Error('请至少选择一个字段（复选框）');
+                            }
 
-                            // 使用手动输入的字段名，而不是选中的字段
-                            const selectedCols = state.sqlConfig.columns.split(',').map(c => c.trim());
+                            // SQL 字段名：使用手动输入的字段名
+                            const sqlFieldNames = state.sqlConfig.columns.split(',').map(c => c.trim());
+                            // Excel 列名：使用复选框选中的列名（用于从 Excel 中取数据）
+                            const excelColumnNames = state.selectedColumns;
+
+                            // 检查数量是否匹配
+                            if (sqlFieldNames.length !== excelColumnNames.length) {
+                                throw new Error(`字段数量不匹配：输入了 ${sqlFieldNames.length} 个字段名，但选择了 ${excelColumnNames.length} 个 Excel 列`);
+                            }
+
+                            console.log('SQL 字段名（用于生成SQL）:', sqlFieldNames);
+                            console.log('Excel 列名（用于取数据）:', excelColumnNames);
+                            console.log('数据示例:', state.excelData.slice(0, 2));
 
                             switch (type) {
                                 case 'insert':
-                                    result = state.excelData.map(row => {
-                                        const values = selectedCols.map(col => {
-                                            const value = row[col];
+                                    result = state.excelData.map((row, idx) => {
+                                        // 从 Excel 列名取数据，映射到 SQL 字段名
+                                        const values = excelColumnNames.map((excelCol, colIdx) => {
+                                            const value = row[excelCol];
+                                            
+                                            // 调试：打印前2行的值
+                                            if (idx < 2) {
+                                                console.log(`第 ${idx + 1} 行，Excel列 "${excelCol}" -> SQL字段 "${sqlFieldNames[colIdx]}"，值:`, value, '类型:', typeof value);
+                                            }
                                             // 处理空值
                                             if (value === null || value === undefined) {
                                                 return 'NULL';
@@ -648,17 +563,17 @@
                                             // 字符串需要转义单引号
                                             return `'${strValue.replace(/'/g, "''")}'`;
                                         }).join(', ');
-                                        return `INSERT INTO ${state.sqlConfig.tableName} (${selectedCols.join(', ')}) VALUES (${values});`;
+                                        return `INSERT INTO ${state.sqlConfig.tableName} (${sqlFieldNames.join(', ')}) VALUES (${values});`;
                                     }).join('\n');
                                     break;
 
                                 case 'in':
-                                    if (selectedCols.length > 1) {
+                                    if (sqlFieldNames.length > 1) {
                                         throw new Error('IN 查询只能选择一个字段');
                                     }
                                     const inValues = state.excelData
                                         .map(row => {
-                                            const value = row[selectedCols[0]];
+                                            const value = row[excelColumnNames[0]]; // 从 Excel 列取数据
                                             if (value === null || value === undefined || value === '') {
                                                 return null; // 跳过空值
                                             }
@@ -673,20 +588,20 @@
                                         })
                                         .filter(v => v !== null) // 过滤掉空值
                                         .join(', ');
-                                    result = `SELECT * FROM ${state.sqlConfig.tableName} WHERE ${selectedCols[0]} IN (${inValues});`;
+                                    result = `SELECT * FROM ${state.sqlConfig.tableName} WHERE ${sqlFieldNames[0]} IN (${inValues});`;
                                     break;
 
                                 case 'delete':
-                                    if (selectedCols.length > 1) {
+                                    if (sqlFieldNames.length > 1) {
                                         throw new Error('DELETE 语句只能选择一个字段作为条件');
                                     }
                                     result = state.excelData
                                         .filter(row => {
-                                            const value = row[selectedCols[0]];
+                                            const value = row[excelColumnNames[0]]; // 从 Excel 列取数据
                                             return value !== null && value !== undefined && value !== '';
                                         })
                                         .map(row => {
-                                            const value = row[selectedCols[0]];
+                                            const value = row[excelColumnNames[0]]; // 从 Excel 列取数据
                                             const strValue = String(value).trim();
                                             
                                             const numValue = Number(strValue);
@@ -694,7 +609,7 @@
                                                 ? numValue 
                                                 : `'${strValue.replace(/'/g, "''")}'`;
                                             
-                                            return `DELETE FROM ${state.sqlConfig.tableName} WHERE ${selectedCols[0]} = ${whereValue};`;
+                                            return `DELETE FROM ${state.sqlConfig.tableName} WHERE ${sqlFieldNames[0]} = ${whereValue};`;
                                         })
                                         .join('\n');
                                     break;
