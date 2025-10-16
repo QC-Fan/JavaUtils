@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.13/vue.global.prod.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.4.4/index.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.4.4/index.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -26,8 +27,7 @@
                             </div>
                         </template>
                         <template #default>
-                            <el-input v-model="textareaValue1" autosize type="textarea" 
-                                placeholder="请输入要转换的数据，每行一条数据"
+                            <el-input v-model="textareaValue1" autosize type="textarea" placeholder="请输入要转换的数据，每行一条数据"
                                 @input="handleInput1"></el-input>
                             <el-input class="input" v-model="qzValue" autosize type="textarea"
                                 placeholder="请输入要添加的前缀"></el-input>
@@ -75,8 +75,7 @@
                             </div>
                         </template>
                         <template #default>
-                            <el-input v-model="textareaValue2" autosize type="textarea"
-                                placeholder="请输入要计算的数字，用逗号分隔"
+                            <el-input v-model="textareaValue2" autosize type="textarea" placeholder="请输入要计算的数字，用逗号分隔"
                                 @input="handleInput2"></el-input>
                             <transition name="el-zoom-in-center">
                                 <div v-if="result2" class="result-box">
@@ -106,32 +105,86 @@
                             </div>
                         </template>
                         <template #default>
-                            <el-row :gutter="15">
-                                <el-col :span="12">
-                                    <el-input 
-                                        v-model="sqlConfig.tableName" 
-                                        placeholder="请输入表名，例如：users"
-                                        class="input">
-                                        <template #prepend>表名</template>
-                                    </el-input>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-input 
-                                        v-model="sqlConfig.columns" 
-                                        placeholder="请输入字段名，多个用逗号分隔，例如：id, name, age"
-                                        class="input">
-                                        <template #prepend>字段</template>
-                                    </el-input>
-                                </el-col>
-                            </el-row>
-                            <el-input 
-                                v-model="sqlData" 
-                                :autosize="{ minRows: 4, maxRows: 8 }" 
-                                type="textarea"
-                                placeholder="请输入数据，每行一条记录&#10;&#10;示例1 - 生成INSERT（多列数据用逗号分隔）：&#10;张三,25,北京&#10;李四,30,上海&#10;&#10;示例2 - 生成IN查询（单列ID）：&#10;1001&#10;1002&#10;1003"
-                                class="input"
-                                @input="handleSqlInput">
-                            </el-input>
+                            <!-- Excel 导入区域 -->
+                            <div class="excel-import-section">
+                                <el-upload :auto-upload="false" :show-file-list="false" :on-change="handleExcelUpload"
+                                    accept=".xlsx,.xls" drag>
+                                    <div class="upload-content">
+                                        <i class="el-icon-upload" style="font-size: 50px; color: #409EFF;"></i>
+                                        <div class="upload-text">📊 拖拽 Excel 文件到此处或点击上传</div>
+                                        <div class="upload-hint">支持 .xlsx 和 .xls 格式</div>
+                                    </div>
+                                </el-upload>
+                            </div>
+
+                            <!-- Excel 数据预览 -->
+                            <transition name="el-zoom-in-center">
+                                <div v-if="excelData.length > 0" class="excel-preview">
+                                    <div class="preview-header">
+                                        <span class="preview-title">📋 Excel 数据预览（共 {{excelData.length}} 行）</span>
+                                        <el-button type="danger" size="small" @click="clearExcelData">清空数据</el-button>
+                                    </div>
+
+                                    <!-- Sheet 切换标签 -->
+                                    <div v-if="sheetNames.length > 1" class="sheet-tabs">
+                                        <div class="sheet-tabs-label">📑 工作表：</div>
+                                        <el-radio-group v-model="currentSheet" @change="switchSheet" size="small">
+                                            <el-radio-button v-for="sheet in sheetNames" :key="sheet" :label="sheet">
+                                                {{sheet}}
+                                            </el-radio-button>
+                                        </el-radio-group>
+                                    </div>
+
+                                    <!-- 字段选择 -->
+                                    <div class="field-selector">
+                                        <span class="selector-label">选择字段：</span>
+                                        <el-checkbox-group v-model="selectedColumns" @change="handleColumnSelect">
+                                            <el-checkbox v-for="col in excelColumns" :key="col" :label="col">
+                                                {{col}}
+                                            </el-checkbox>
+                                        </el-checkbox-group>
+                                        <el-button type="primary" size="small" @click="selectAllColumns(); handleColumnSelect();"
+                                            style="margin-left: 10px;">全选</el-button>
+                                    </div>
+
+                                    <!-- 数据表格 -->
+                                    <div class="table-wrapper">
+                                        <el-table :data="excelData.slice(0, 10)" border stripe max-height="300">
+                                            <el-table-column v-for="col in excelColumns" :key="col" :prop="col"
+                                                :label="col" min-width="120">
+                                            </el-table-column>
+                                        </el-table>
+                                        <div v-if="excelData.length > 10" class="table-hint">
+                                            仅显示前 10 行，实际共 {{excelData.length}} 行数据
+                                        </div>
+                                    </div>
+                                </div>
+                            </transition>
+
+                            <!-- 原有的手动输入区域 -->
+                            <div class="manual-input-section">
+                                <div class="section-divider">
+                                    <span>或者手动输入</span>
+                                </div>
+                                <el-row :gutter="15">
+                                    <el-col :span="12">
+                                        <el-input v-model="sqlConfig.tableName" placeholder="请输入表名，例如：users"
+                                            class="input">
+                                            <template #prepend>表名</template>
+                                        </el-input>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-input v-model="sqlConfig.columns"
+                                            placeholder="请输入字段名，多个用逗号分隔，例如：id, name, age" class="input">
+                                            <template #prepend>字段</template>
+                                        </el-input>
+                                    </el-col>
+                                </el-row>
+                                <el-input v-model="sqlData" :autosize="{ minRows: 4, maxRows: 8 }" type="textarea"
+                                    placeholder="请输入数据，每行一条记录&#10;&#10;示例1 - 生成INSERT（多列数据用逗号分隔）：&#10;张三,25,北京&#10;李四,30,上海&#10;&#10;示例2 - 生成IN查询（单列ID）：&#10;1001&#10;1002&#10;1003"
+                                    class="input" :disabled="excelData.length > 0" @input="handleSqlInput">
+                                </el-input>
+                            </div>
                             <transition name="el-zoom-in-center">
                                 <div v-if="sqlResult" class="result-box sql-result">
                                     <div class="result-title">生成的SQL语句：</div>
@@ -169,7 +222,7 @@
 
     <script>
         const { createApp, ref, reactive, toRefs } = Vue;
-        
+
         // 工具函数
         const utils = {
             copyToClipboard(text) {
@@ -180,8 +233,8 @@
                     el.style.position = 'absolute';
                     el.style.left = '-9999px';
                     document.body.appendChild(el);
-                    const selected = document.getSelection().rangeCount > 0 
-                        ? document.getSelection().getRangeAt(0) 
+                    const selected = document.getSelection().rangeCount > 0
+                        ? document.getSelection().getRangeAt(0)
                         : false;
                     el.select();
                     document.execCommand('copy');
@@ -227,7 +280,14 @@
                     sqlConfig: {
                         tableName: '',
                         columns: ''
-                    }
+                    },
+                    // Excel 导入相关
+                    excelData: [],
+                    excelColumns: [],
+                    selectedColumns: [],
+                    excelWorkbook: null,
+                    sheetNames: [],
+                    currentSheet: ''
                 });
 
                 // 输入处理
@@ -241,6 +301,243 @@
 
                 const handleSqlInput = (value) => {
                     state.sqlResult = '';
+                };
+
+                // Excel 文件上传处理
+                const handleExcelUpload = (file) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            console.log(workbook,99);
+                            if (workbook.SheetNames.length === 0) {
+                                ElementPlus.ElMessage.error('Excel 文件为空或格式不正确');
+                                return;
+                            }
+
+                            // 保存 workbook 和 sheet 名称列表
+                            state.excelWorkbook = workbook;
+                            state.sheetNames = workbook.SheetNames;
+                            state.currentSheet = workbook.SheetNames[0];
+
+                            // 加载第一个 sheet 的数据
+                            loadSheetData(state.currentSheet);
+
+                            ElementPlus.ElMessage.success(`成功导入 Excel 文件，共 ${workbook.SheetNames.length} 个工作表`);
+                        } catch (err) {
+                            console.error('Excel 解析失败:', err);
+                            ElementPlus.ElMessage.error('Excel 文件解析失败，请检查文件格式');
+                        }
+                    };
+                    reader.readAsArrayBuffer(file.raw);
+                };
+
+                // 加载指定 Sheet 的数据
+                const loadSheetData = (sheetName) => {
+                    if (!state.excelWorkbook) return;
+
+                    try {
+                        const worksheet = state.excelWorkbook.Sheets[sheetName];
+                        console.log('工作表对象:', worksheet);
+                        
+                        // 获取工作表的实际范围
+                        const range = XLSX.utils.decode_range(worksheet['!ref']);
+                        console.log('Excel 文件声明的范围:', worksheet['!ref']);
+                        console.log('起始行:', range.s.r, '结束行:', range.e.r);
+                        
+                        // 检查是否有隐藏行信息
+                        const hiddenRows = new Set();
+                        if (worksheet['!rows']) {
+                            worksheet['!rows'].forEach((rowInfo, idx) => {
+                                if (rowInfo && rowInfo.hidden) {
+                                    hiddenRows.add(idx);
+                                    console.log(`第 ${idx + 1} 行被隐藏`);
+                                }
+                            });
+                        }
+                        console.log('检测到隐藏行数量:', hiddenRows.size);
+                        
+                        // 使用 defval 选项确保空单元格也会被保留
+                        // header: 1 选项先获取原始数据，包括表头
+                        let rawData = XLSX.utils.sheet_to_json(worksheet, { 
+                            header: 1,
+                            defval: '',  // 空单元格用空字符串填充
+                            raw: false   // 保持原始格式
+                        });
+
+                        console.log('读取到的总行数（包括表头）:', rawData.length);
+                        
+                        // 过滤掉隐藏的行
+                        if (hiddenRows.size > 0) {
+                            rawData = rawData.filter((row, idx) => {
+                                return !hiddenRows.has(idx);
+                            });
+                            console.log('过滤隐藏行后的行数:', rawData.length);
+                        }
+
+                        if (rawData.length === 0) {
+                            ElementPlus.ElMessage.warning(`工作表 "${sheetName}" 为空`);
+                            state.excelData = [];
+                            state.excelColumns = [];
+                            state.selectedColumns = [];
+                            return;
+                        }
+
+                        // 找到最后一行有数据的位置（从后往前查找）
+                        let lastValidRow = rawData.length - 1;
+                        for (let i = rawData.length - 1; i >= 1; i--) {
+                            const row = rawData[i];
+                            const hasData = row && row.some(cell => {
+                                if (cell === null || cell === undefined || cell === '') return false;
+                                const strValue = String(cell).trim();
+                                return strValue !== '' && /\S/.test(strValue);
+                            });
+                            if (hasData) {
+                                lastValidRow = i;
+                                break;
+                            }
+                        }
+
+                        // 截断到最后有效行
+                        if (lastValidRow < rawData.length - 1) {
+                            console.log(`检测到最后有效行: ${lastValidRow + 1}, 截断前总行数: ${rawData.length}`);
+                            rawData = rawData.slice(0, lastValidRow + 1);
+                            console.log(`截断后行数: ${rawData.length}`);
+                        }
+
+                        // 第一行作为表头
+                        const headers = rawData[0];
+                        
+                        // 过滤掉空的表头
+                        const validHeaders = headers.map((h, idx) => {
+                            if (!h || h.toString().trim() === '') {
+                                return `Column_${idx + 1}`; // 给空表头一个默认名称
+                            }
+                            return h.toString().trim();
+                        });
+
+                        // 从第二行开始是数据，转换为对象数组
+                        const dataRows = rawData.slice(1);
+                        
+                        // 调试：查看原始数据
+                        console.log('原始数据行数:', dataRows.length);
+                        console.log('前5行原始数据:', dataRows.slice(0, 5));
+                        console.log('后5行原始数据:', dataRows.slice(-5));
+                        
+                        // 检查每一行的内容
+                        dataRows.forEach((row, idx) => {
+                            const rowStr = JSON.stringify(row);
+                            if (idx >= 15 && idx < 20) {
+                                console.log(`第 ${idx + 2} 行内容:`, rowStr, '长度:', rowStr.length);
+                            }
+                        });
+                        
+                        const jsonData = dataRows
+                            .map((row, rowIndex) => {
+                                const obj = {};
+                                validHeaders.forEach((header, idx) => {
+                                    // 确保每个字段都存在，即使是空值
+                                    obj[header] = row[idx] !== undefined && row[idx] !== null ? row[idx] : '';
+                                });
+                                obj._rowIndex = rowIndex + 2; // 加上表头行，用于调试
+                                return obj;
+                            })
+                            .filter(row => {
+                                // 过滤掉完全空白的行（所有字段都为空）
+                                const values = Object.entries(row)
+                                    .filter(([key]) => key !== '_rowIndex') // 排除调试字段
+                                    .map(([, value]) => value);
+                                
+                                const hasData = values.some(value => {
+                                    if (value === null || value === undefined) return false;
+                                    const strValue = String(value).trim();
+                                    // 更严格的判断：排除只有空格、制表符、换行符的情况
+                                    return strValue !== '' && strValue.length > 0 && /\S/.test(strValue);
+                                });
+                                
+                                if (!hasData) {
+                                    console.log(`过滤掉第 ${row._rowIndex} 行（空行）:`, row);
+                                }
+                                
+                                return hasData;
+                            })
+                            .map(row => {
+                                // 移除调试字段
+                                const { _rowIndex, ...cleanRow } = row;
+                                return cleanRow;
+                            });
+
+                        if (jsonData.length === 0) {
+                            ElementPlus.ElMessage.warning(`工作表 "${sheetName}" 只有表头，没有数据`);
+                            state.excelData = [];
+                            state.excelColumns = validHeaders;
+                            state.selectedColumns = [...validHeaders];
+                            return;
+                        }
+
+                        state.excelData = jsonData;
+                        state.excelColumns = validHeaders;
+                        state.selectedColumns = [...validHeaders]; // 默认全选
+                        state.currentSheet = sheetName;
+
+                        const totalRows = dataRows.length;
+                        const validRows = jsonData.length;
+                        const emptyRows = totalRows - validRows;
+
+                        console.log('加载的列名:', validHeaders);
+                        console.log('数据示例:', jsonData.slice(0, 3));
+                        console.log(`原始行数: ${totalRows}, 有效行数: ${validRows}, 空行数: ${emptyRows}`);
+
+                        // 构建提示信息
+                        let message = `已加载工作表 "${sheetName}"，共 ${validRows} 行有效数据`;
+                        const filters = [];
+                        if (hiddenRows.size > 0) {
+                            filters.push(`${hiddenRows.size} 行隐藏行`);
+                        }
+                        if (emptyRows > 0) {
+                            filters.push(`${emptyRows} 行空白行`);
+                        }
+                        if (filters.length > 0) {
+                            message += `（已过滤 ${filters.join('、')}）`;
+                        }
+                        
+                        ElementPlus.ElMessage.success(message);
+                    } catch (err) {
+                        console.error('Sheet 加载失败:', err);
+                        ElementPlus.ElMessage.error('工作表加载失败');
+                    }
+                };
+
+                // 切换 Sheet
+                const switchSheet = (sheetName) => {
+                    loadSheetData(sheetName);
+                };
+
+                // 清空 Excel 数据
+                const clearExcelData = () => {
+                    state.excelData = [];
+                    state.excelColumns = [];
+                    state.selectedColumns = [];
+                    state.excelWorkbook = null;
+                    state.sheetNames = [];
+                    state.currentSheet = '';
+                    state.sqlConfig.columns = '';
+                    state.sqlResult = '';
+                    ElementPlus.ElMessage.success('已清空数据');
+                };
+
+                // 全选字段
+                const selectAllColumns = () => {
+                    state.selectedColumns = [...state.excelColumns];
+                };
+
+                // 监听字段选择变化
+                const handleColumnSelect = () => {
+                    // 当用户没有手动输入字段时，根据选择的列自动填充
+                    // if (state.excelColumns.length > 0 && state.selectedColumns.length > 0) {
+                    //     state.sqlConfig.columns = state.selectedColumns.join(', ');
+                    // }
                 };
 
                 // 数据转换处理
@@ -303,77 +600,166 @@
                 // SQL 生成处理
                 const generateSQL = (type) => {
                     try {
-                        utils.validateInput(state.sqlData);
-                        
-                        const lines = state.sqlData.split(/\n/).filter(line => line.trim());
+                        // 检查是使用 Excel 数据还是手动输入
+                        const useExcelData = state.excelData.length > 0;
+
+                        if (!useExcelData) {
+                            utils.validateInput(state.sqlData);
+                        }
+
+                        if (!state.sqlConfig.tableName) {
+                            throw new Error('请输入表名');
+                        }
+
                         let result = '';
 
-                        switch (type) {
-                            case 'insert':
-                                if (!state.sqlConfig.tableName) {
-                                    throw new Error('请输入表名');
-                                }
-                                if (!state.sqlConfig.columns) {
-                                    throw new Error('请输入字段名');
-                                }
-                                const columns = state.sqlConfig.columns.split(',').map(c => c.trim());
-                                result = lines.map(line => {
-                                    const values = line.split(',').map(v => {
-                                        const trimmed = v.trim();
-                                        // 判断是否为数字
-                                        return isNaN(trimmed) ? `'${trimmed}'` : trimmed;
+                        if (useExcelData) {
+                            // 使用 Excel 数据生成 SQL
+                            if (!state.sqlConfig.columns) {
+                                throw new Error('请输入字段名');
+                            }
+
+                            // 使用手动输入的字段名，而不是选中的字段
+                            const selectedCols = state.sqlConfig.columns.split(',').map(c => c.trim());
+
+                            switch (type) {
+                                case 'insert':
+                                    result = state.excelData.map(row => {
+                                        const values = selectedCols.map(col => {
+                                            const value = row[col];
+                                            // 处理空值
+                                            if (value === null || value === undefined) {
+                                                return 'NULL';
+                                            }
+                                            // 处理空字符串
+                                            if (value === '') {
+                                                return "''";  // 空字符串
+                                            }
+                                            // 转换为字符串后判断
+                                            const strValue = String(value).trim();
+                                            if (strValue === '') {
+                                                return "''";
+                                            }
+                                            // 判断是否为数字
+                                            const numValue = Number(strValue);
+                                            if (!isNaN(numValue) && strValue !== '') {
+                                                return numValue;
+                                            }
+                                            // 字符串需要转义单引号
+                                            return `'${strValue.replace(/'/g, "''")}'`;
+                                        }).join(', ');
+                                        return `INSERT INTO ${state.sqlConfig.tableName} (${selectedCols.join(', ')}) VALUES (${values});`;
+                                    }).join('\n');
+                                    break;
+
+                                case 'in':
+                                    if (selectedCols.length > 1) {
+                                        throw new Error('IN 查询只能选择一个字段');
+                                    }
+                                    const inValues = state.excelData
+                                        .map(row => {
+                                            const value = row[selectedCols[0]];
+                                            if (value === null || value === undefined || value === '') {
+                                                return null; // 跳过空值
+                                            }
+                                            const strValue = String(value).trim();
+                                            if (strValue === '') return null;
+                                            
+                                            const numValue = Number(strValue);
+                                            if (!isNaN(numValue) && strValue !== '') {
+                                                return numValue;
+                                            }
+                                            return `'${strValue.replace(/'/g, "''")}'`;
+                                        })
+                                        .filter(v => v !== null) // 过滤掉空值
+                                        .join(', ');
+                                    result = `SELECT * FROM ${state.sqlConfig.tableName} WHERE ${selectedCols[0]} IN (${inValues});`;
+                                    break;
+
+                                case 'delete':
+                                    if (selectedCols.length > 1) {
+                                        throw new Error('DELETE 语句只能选择一个字段作为条件');
+                                    }
+                                    result = state.excelData
+                                        .filter(row => {
+                                            const value = row[selectedCols[0]];
+                                            return value !== null && value !== undefined && value !== '';
+                                        })
+                                        .map(row => {
+                                            const value = row[selectedCols[0]];
+                                            const strValue = String(value).trim();
+                                            
+                                            const numValue = Number(strValue);
+                                            const whereValue = !isNaN(numValue) && strValue !== '' 
+                                                ? numValue 
+                                                : `'${strValue.replace(/'/g, "''")}'`;
+                                            
+                                            return `DELETE FROM ${state.sqlConfig.tableName} WHERE ${selectedCols[0]} = ${whereValue};`;
+                                        })
+                                        .join('\n');
+                                    break;
+
+                                case 'update':
+                                    throw new Error('Excel 模式下暂不支持 UPDATE 语句，请使用手动输入模式');
+                            }
+                        } else {
+                            // 使用手动输入数据生成 SQL
+                            const lines = state.sqlData.split(/\n/).filter(line => line.trim());
+
+                            switch (type) {
+                                case 'insert':
+                                    if (!state.sqlConfig.columns) {
+                                        throw new Error('请输入字段名');
+                                    }
+                                    const columns = state.sqlConfig.columns.split(',').map(c => c.trim());
+                                    result = lines.map(line => {
+                                        const values = line.split(',').map(v => {
+                                            const trimmed = v.trim();
+                                            return isNaN(trimmed) ? `'${trimmed}'` : trimmed;
+                                        }).join(', ');
+                                        return `INSERT INTO ${state.sqlConfig.tableName} (${state.sqlConfig.columns}) VALUES (${values});`;
+                                    }).join('\n');
+                                    break;
+
+                                case 'update':
+                                    if (!state.sqlConfig.columns) {
+                                        throw new Error('请输入字段名（格式：更新字段=值,条件字段）');
+                                    }
+                                    const parts = state.sqlConfig.columns.split(',').map(c => c.trim());
+                                    if (parts.length < 2) {
+                                        throw new Error('请输入正确格式（例如：status=已完成,id）');
+                                    }
+                                    const updateClause = parts[0];
+                                    const whereColumn = parts[1];
+                                    result = lines.map(line => {
+                                        const value = line.trim();
+                                        const whereValue = isNaN(value) ? `'${value}'` : value;
+                                        return `UPDATE ${state.sqlConfig.tableName} SET ${updateClause} WHERE ${whereColumn} = ${whereValue};`;
+                                    }).join('\n');
+                                    break;
+
+                                case 'in':
+                                    if (!state.sqlConfig.columns) {
+                                        throw new Error('请输入字段名');
+                                    }
+                                    const inValues = lines.map(line => {
+                                        const value = line.trim();
+                                        return isNaN(value) ? `'${value}'` : value;
                                     }).join(', ');
-                                    return `INSERT INTO ${state.sqlConfig.tableName} (${state.sqlConfig.columns}) VALUES (${values});`;
-                                }).join('\n');
-                                break;
+                                    result = `SELECT * FROM ${state.sqlConfig.tableName} WHERE ${state.sqlConfig.columns.trim()} IN (${inValues});`;
+                                    break;
 
-                            case 'update':
-                                if (!state.sqlConfig.tableName) {
-                                    throw new Error('请输入表名');
-                                }
-                                if (!state.sqlConfig.columns) {
-                                    throw new Error('请输入字段名（格式：更新字段=值,条件字段）');
-                                }
-                                const parts = state.sqlConfig.columns.split(',').map(c => c.trim());
-                                if (parts.length < 2) {
-                                    throw new Error('请输入正确格式（例如：status=已完成,id）');
-                                }
-                                const updateClause = parts[0];
-                                const whereColumn = parts[1];
-                                result = lines.map(line => {
-                                    const value = line.trim();
-                                    const whereValue = isNaN(value) ? `'${value}'` : value;
-                                    return `UPDATE ${state.sqlConfig.tableName} SET ${updateClause} WHERE ${whereColumn} = ${whereValue};`;
-                                }).join('\n');
-                                break;
-
-                            case 'in':
-                                if (!state.sqlConfig.tableName) {
-                                    throw new Error('请输入表名');
-                                }
-                                if (!state.sqlConfig.columns) {
-                                    throw new Error('请输入字段名');
-                                }
-                                const inValues = lines.map(line => {
-                                    const value = line.trim();
-                                    return isNaN(value) ? `'${value}'` : value;
-                                }).join(', ');
-                                result = `SELECT * FROM ${state.sqlConfig.tableName} WHERE ${state.sqlConfig.columns.trim()} IN (${inValues});`;
-                                break;
-
-                            case 'delete':
-                                if (!state.sqlConfig.tableName) {
-                                    throw new Error('请输入表名');
-                                }
-                                if (!state.sqlConfig.columns) {
-                                    throw new Error('请输入字段名');
-                                }
-                                result = lines.map(line => {
-                                    const value = line.trim();
-                                    const whereValue = isNaN(value) ? `'${value}'` : value;
-                                    return `DELETE FROM ${state.sqlConfig.tableName} WHERE ${state.sqlConfig.columns.trim()} = ${whereValue};`;
-                                }).join('\n');
-                                break;
+                                case 'delete':
+                                    if (!state.sqlConfig.columns) {
+                                        throw new Error('请输入字段名');
+                                    }
+                                    result = lines.map(line => {
+                                        const value = line.trim();
+                                        const whereValue = isNaN(value) ? `'${value}'` : value;
+                                        return `DELETE FROM ${state.sqlConfig.tableName} WHERE ${state.sqlConfig.columns.trim()} = ${whereValue};`;
+                                    }).join('\n');
+                                    break;
+                            }
                         }
 
                         state.sqlResult = result;
@@ -390,7 +776,12 @@
                     handleSqlInput,
                     handleTransform,
                     handleCalculate,
-                    generateSQL
+                    generateSQL,
+                    handleExcelUpload,
+                    clearExcelData,
+                    selectAllColumns,
+                    switchSheet,
+                    handleColumnSelect
                 };
             }
         });
@@ -473,6 +864,133 @@
             gap: 10px;
         }
 
+        /* Excel 导入相关样式 */
+        .excel-import-section {
+            margin-bottom: 20px;
+        }
+
+        .upload-content {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            margin-top: 10px;
+            color: #409EFF;
+        }
+
+        .upload-hint {
+            font-size: 12px;
+            color: #909399;
+            margin-top: 5px;
+        }
+
+        .excel-preview {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #409EFF;
+        }
+
+        .preview-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #409EFF;
+        }
+
+        .sheet-tabs {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(230, 244, 255, 0.8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .sheet-tabs-label {
+            font-weight: bold;
+            color: #409EFF;
+            white-space: nowrap;
+        }
+
+        .field-selector {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(240, 248, 255, 0.8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .selector-label {
+            font-weight: bold;
+            color: #333;
+            margin-right: 10px;
+        }
+
+        .table-wrapper {
+            margin-top: 15px;
+        }
+
+        .table-hint {
+            text-align: center;
+            padding: 10px;
+            color: #909399;
+            font-size: 13px;
+            background: rgba(255, 250, 205, 0.3);
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .manual-input-section {
+            margin-top: 20px;
+        }
+
+        .section-divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #dcdfe6, transparent);
+        }
+
+        .section-divider::before {
+            left: 0;
+        }
+
+        .section-divider::after {
+            right: 0;
+        }
+
+        .section-divider span {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0 15px;
+            color: #909399;
+            font-size: 14px;
+        }
+
         .btn {
             border: none;
             position: relative;
@@ -483,6 +1001,7 @@
             -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
             mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
             -webkit-mask-size: 100%;
+            mask-size: 100%;
             cursor: pointer;
             background-color: transparent;
             transform: translateY(8px)
@@ -541,11 +1060,12 @@
                 width: 100% !important;
                 margin-bottom: 20px;
             }
-            
+
             .btn {
                 width: 150px;
                 height: 60px;
             }
         }
     </style>
+
 </html>
