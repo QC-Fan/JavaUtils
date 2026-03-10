@@ -266,7 +266,7 @@
         const CURRENT_VERSION = '1.0.0';
         const GITHUB_REPO = 'QC-Fan/JavaUtils';
         const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/version.json`;
-        const DOWNLOAD_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/excel.html`;
+        const DOWNLOAD_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/excel-tools.html`;
 
         // 工具函数
         const utils = {
@@ -778,7 +778,7 @@
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = 'excel.html';
+                        a.download = 'excel-tools.html';
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
