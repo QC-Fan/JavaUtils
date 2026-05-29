@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 
 <head>
@@ -9,324 +9,985 @@
     <title>数据转换工具</title>
     <link href="https://jct-shopping-hz.oss-cn-hangzhou.aliyuncs.com/clouFile/6bdceba9-475c-4f2b-a80d-b13dc2ee1a2d.jpeg"
         rel="icon">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.13/vue.global.prod.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.4.4/index.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.4.4/index.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'monospace']
+                    },
+                    boxShadow: {
+                        glow: '0 0 0 1px rgba(255, 255, 255, 0.08)',
+                        panel: '0 24px 80px rgba(0, 0, 0, 0.45)'
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        html {
+            background: #000;
+        }
+
+        body {
+            min-height: 100vh;
+             background-image: url('https://api.dujin.org/bing/1920.php');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.12), transparent 32rem),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.55));
+        }
+
+        ::selection {
+            background: #fff;
+            color: #000;
+        }
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #555 transparent;
+        }
+
+        *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border: 2px solid transparent;
+            border-radius: 999px;
+            background-clip: content-box;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background: #737373;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        *::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        .glass-panel {
+            border: 1px solid #262626;
+            background: rgba(10, 10, 10, 0.88);
+            box-shadow: none;
+            backdrop-filter: blur(18px);
+        }
+
+        .control,
+        .select-control,
+        .textarea-control {
+            width: 100%;
+            border: 1px solid #333;
+            background: #000;
+            color: #ededed;
+            outline: none;
+            transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+
+        .control,
+        .select-control {
+            height: 42px;
+            border-radius: 14px;
+            padding: 0 14px;
+        }
+
+        .textarea-control {
+            min-height: 128px;
+            resize: vertical;
+            border-radius: 18px;
+            padding: 14px;
+            line-height: 1.65;
+        }
+
+        .control::placeholder,
+        .textarea-control::placeholder {
+            color: #737373;
+        }
+
+        .control:focus,
+        .select-control:focus,
+        .textarea-control:focus {
+            border-color: #fff;
+            background: #050505;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+        }
+
+        .select-control option {
+            background: #000;
+            color: #ededed;
+        }
+
+        .btn {
+            display: inline-flex;
+            min-height: 42px;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 14px;
+            border: 1px solid #333;
+            background: #111;
+            padding: 0 16px;
+            color: #ededed;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            border-color: #777;
+            background: #1a1a1a;
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            border-color: #fff;
+            background: #fff;
+            color: #000;
+            box-shadow: none;
+        }
+
+        .btn-primary:hover {
+            border-color: #e5e5e5;
+            background: #e5e5e5;
+            color: #000;
+            box-shadow: none;
+        }
+
+        .btn-danger:hover {
+            border-color: #7f1d1d;
+            background: rgba(127, 29, 29, 0.18);
+            box-shadow: none;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            border: 1px solid #333;
+            background: #111;
+            padding: 6px 10px;
+            color: #a3a3a3;
+            font-size: 12px;
+        }
+
+        .checkbox-tile,
+        .radio-tile {
+            display: inline-flex;
+            cursor: pointer;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            border: 1px solid #333;
+            background: #0a0a0a;
+            padding: 8px 11px;
+            color: #d4d4d4;
+            font-size: 13px;
+            transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+        }
+
+        .checkbox-tile:hover,
+        .radio-tile:hover {
+            border-color: #737373;
+            background: #171717;
+            color: #fff;
+        }
+
+        .checkbox-tile input,
+        .radio-tile input {
+            accent-color: #fff;
+        }
+
+        .tabs-button {
+            border-radius: 999px;
+            border: 1px solid #333;
+            background: #0a0a0a;
+            padding: 8px 12px;
+            color: #a3a3a3;
+            font-size: 13px;
+            transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+        }
+
+        .tabs-button.active {
+            border-color: #fff;
+            background: #fff;
+            color: #000;
+        }
+
+        .code-block {
+            max-height: 430px;
+            overflow: auto;
+            border-radius: 18px;
+            border: 1px solid #262626;
+            background: #050505;
+            padding: 16px;
+            color: #ededed;
+            font-family: JetBrains Mono, SFMono-Regular, Consolas, Liberation Mono, monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .table-scroll {
+            overflow: auto;
+            border-radius: 18px;
+            border: 1px solid #262626;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 720px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #262626;
+            padding: 11px 13px;
+            text-align: left;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #0a0a0a;
+            color: #ededed;
+            font-weight: 700;
+        }
+
+        td {
+            color: #a3a3a3;
+            background: #050505;
+        }
+
+        tbody tr:hover td {
+            background: #111;
+        }
+
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(16px);
+        }
+
+        .compact-config .control,
+        .compact-config .select-control {
+            height: 36px;
+            border-radius: 10px;
+            padding-inline: 11px;
+            font-size: 13px;
+        }
+
+        .compact-config .checkbox-tile,
+        .compact-config .radio-tile {
+            padding: 6px 9px;
+            font-size: 12px;
+        }
+
+        header.sticky {
+            border-color: #262626 !important;
+            background: rgba(0, 0, 0, 0.82) !important;
+            backdrop-filter: blur(18px);
+        }
+
+        .bg-white\/5,
+        .bg-slate-950\/30 {
+            background-color: #050505 !important;
+        }
+
+        .border-white\/10,
+        .border-white\/15,
+        .border-dashed {
+            border-color: #262626 !important;
+        }
+
+        .text-teal-200\/80,
+        .text-sky-200\/80,
+        .text-indigo-200\/80,
+        .text-fuchsia-200\/80,
+        .text-teal-200,
+        .text-teal-100 {
+            color: #fafafa !important;
+        }
+
+        .bg-teal-300\/10,
+        .bg-teal-300\/15,
+        .bg-teal-200\/10,
+        .hover\:bg-teal-300\/10:hover {
+            background-color: #111 !important;
+        }
+
+        .border-teal-300\/30,
+        .border-teal-200\/25,
+        .hover\:border-teal-300\/40:hover {
+            border-color: #333 !important;
+        }
+
+        @media (max-width: 640px) {
+            .textarea-control {
+                min-height: 112px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            table {
+                min-width: 620px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div id="app">
-        <el-scrollbar>
-            <el-row :gutter="20">
-                <el-col :span="12">
-                    <el-card class="box-card">
-                        <template #header>
-                            <div class="card-header">
-                                <span>Excel列数据转换工具测试</span>
+    <div id="app" v-cloak class="min-h-screen">
+        <header
+            class="sticky top-0 z-30 w-full border-b border-white/10 bg-slate-950/60 px-4 py-4 backdrop-blur-2xl sm:px-6 lg:px-8">
+            <div class="mx-auto w-full max-w-[1440px]">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-teal-300/30 bg-teal-300/10 shadow-glow">
+                            <svg class="h-6 w-6 text-teal-200" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M4 7.5C4 5.57 5.57 4 7.5 4h9C18.43 4 20 5.57 20 7.5v9c0 1.93-1.57 3.5-3.5 3.5h-9A3.5 3.5 0 0 1 4 16.5v-9Z"
+                                    stroke="currentColor" stroke-width="1.7" />
+                                <path d="M8 9h8M8 12h5M8 15h7" stroke="currentColor" stroke-width="1.7"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <h1 class="text-xl font-semibold tracking-normal text-white sm:text-2xl">数据转换工具</h1>
+                                <span class="chip">v{{currentVersion}}</span>
                             </div>
-                        </template>
-                        <template #default>
-                            <el-input v-model="textareaValue1" autosize type="textarea" placeholder="请输入要转换的数据，每行一条数据"
-                                @input="handleInput1"></el-input>
-                            <el-input class="input" v-model="qzValue" autosize type="textarea"
-                                placeholder="请输入要添加的前缀"></el-input>
-                            <transition name="el-zoom-in-center">
-                                <div v-if="result1" class="result-box">
-                                    <div class="result-title">转换结果：</div>
-                                    <div class="result-content">{{result1}}</div>
+                            <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
+                                Excel 导入、字段映射、SQL 生成、数据清洗与数字计算的一体化本地工具。
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="chip">本地 file:// 可运行</span>
+                        <button class="btn btn-primary" @click="checkUpdate(false)" :disabled="checking">
+                            <svg class="h-4 w-4" :class="{'animate-spin': checking}" viewBox="0 0 24 24" fill="none"
+                                aria-hidden="true">
+                                <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="currentColor" stroke-width="1.8"
+                                    stroke-linecap="round" />
+                                <path d="M20 4v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            {{checking ? '检查中' : '检查更新'}}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="relative mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 pb-10 pt-5 sm:px-6 lg:px-8">
+
+            <section class="flex flex-1 flex-col gap-5 py-5">
+                <aside class="grid gap-5 lg:grid-cols-2">
+                    <section class="glass-panel rounded-2xl p-5">
+                        <div class="mb-4 flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-teal-200/80">Transform</p>
+                                <h2 class="mt-2 text-lg font-semibold text-white">列数据转换</h2>
+                            </div>
+                            <span class="chip">复制自动完成</span>
+                        </div>
+
+                        <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+                            <label class="grid gap-2">
+                                <span class="text-sm font-medium text-slate-300">原始数据</span>
+                                <textarea v-model="textareaValue1" class="textarea-control !min-h-[96px]"
+                                    placeholder="请输入要转换的数据，每行一条数据" @input="handleInput1"></textarea>
+                            </label>
+                            <label class="grid gap-2">
+                                <span class="text-sm font-medium text-slate-300">前缀内容</span>
+                                <textarea v-model="qzValue" class="textarea-control !min-h-[96px]"
+                                    placeholder="请输入要添加的前缀"></textarea>
+                            </label>
+                        </div>
+
+                        <div class="mt-4 inline-flex rounded-xl border border-white/10 bg-white/5 p-1">
+                            <button class="tabs-button !rounded-lg !border-0 !px-4 !py-2"
+                                :class="{ active: transformPanelTab === 'quick' }"
+                                @click="transformPanelTab = 'quick'">常规转换</button>
+                            <button class="tabs-button !rounded-lg !border-0 !px-4 !py-2"
+                                :class="{ active: transformPanelTab === 'options' }"
+                                @click="transformPanelTab = 'options'">选项转换</button>
+                        </div>
+
+                        <div v-if="transformPanelTab === 'options'"
+                            class="compact-config mt-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+                            <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                                <label class="grid gap-2">
+                                    <span class="text-xs font-medium text-slate-400">分隔符</span>
+                                    <select v-model="transformOptions.delimiter" class="select-control">
+                                        <option value="comma">逗号</option>
+                                        <option value="commaSpace">逗号+空格</option>
+                                        <option value="newline">换行</option>
+                                        <option value="space">空格</option>
+                                        <option value="semicolon">分号</option>
+                                        <option value="custom">自定义</option>
+                                    </select>
+                                </label>
+                                <label class="grid gap-2">
+                                    <span class="text-xs font-medium text-slate-400">包裹格式</span>
+                                    <select v-model="transformOptions.wrapper" class="select-control">
+                                        <option value="none">不包裹</option>
+                                        <option value="single">单引号</option>
+                                        <option value="double">双引号</option>
+                                        <option value="backtick">反引号</option>
+                                        <option value="paren">圆括号</option>
+                                        <option value="bracket">方括号</option>
+                                        <option value="custom">自定义</option>
+                                    </select>
+                                </label>
+                                <label v-if="transformOptions.delimiter === 'custom'" class="grid gap-2">
+                                    <span class="text-xs font-medium text-slate-400">自定义分隔符</span>
+                                    <input v-model="transformOptions.customDelimiter" class="control"
+                                        placeholder="自定义分隔符">
+                                </label>
+                                <label v-if="transformOptions.wrapper === 'custom'" class="grid gap-2">
+                                    <span class="text-xs font-medium text-slate-400">前包裹</span>
+                                    <input v-model="transformOptions.customPrefix" class="control" placeholder="前包裹">
+                                </label>
+                                <label v-if="transformOptions.wrapper === 'custom'" class="grid gap-2">
+                                    <span class="text-xs font-medium text-slate-400">后包裹</span>
+                                    <input v-model="transformOptions.customSuffix" class="control" placeholder="后包裹">
+                                </label>
+                                <label class="grid gap-2">
+                                    <span class="text-xs font-medium text-slate-400">排序</span>
+                                    <select v-model="transformOptions.sortMode" class="select-control">
+                                        <option value="none">保持原顺序</option>
+                                        <option value="textAsc">文本升序</option>
+                                        <option value="textDesc">文本降序</option>
+                                        <option value="numberAsc">数字升序</option>
+                                        <option value="numberDesc">数字降序</option>
+                                    </select>
+                                </label>
+                                <label class="grid gap-2">
+                                    <span class="text-xs font-medium text-slate-400">每行数量，0 表示单行</span>
+                                    <input v-model.number="transformOptions.itemsPerLine" type="number" min="0" max="100"
+                                        class="control">
+                                </label>
+                            </div>
+
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <label class="checkbox-tile">
+                                    <input v-model="transformOptions.trim" type="checkbox">
+                                    <span>去首尾空格</span>
+                                </label>
+                                <label class="checkbox-tile">
+                                    <input v-model="transformOptions.removeEmpty" type="checkbox">
+                                    <span>去空行</span>
+                                </label>
+                                <label class="checkbox-tile">
+                                    <input v-model="transformOptions.unique" type="checkbox">
+                                    <span>去重复</span>
+                                </label>
+                                <label class="checkbox-tile">
+                                    <input v-model="transformOptions.normalizeComma" type="checkbox">
+                                    <span>统一中英文逗号</span>
+                                </label>
+                            </div>
+
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <label class="radio-tile">
+                                    <input v-model="transformOptions.caseMode" type="radio" value="none">
+                                    <span>原大小写</span>
+                                </label>
+                                <label class="radio-tile">
+                                    <input v-model="transformOptions.caseMode" type="radio" value="upper">
+                                    <span>大写</span>
+                                </label>
+                                <label class="radio-tile">
+                                    <input v-model="transformOptions.caseMode" type="radio" value="lower">
+                                    <span>小写</span>
+                                </label>
+                            </div>
+
+                            <div class="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-white">按当前选项转换</div>
+                                    <div class="mt-1 text-xs text-slate-500">应用分隔符、包裹、排序、去重、大小写等配置</div>
                                 </div>
-                            </transition>
-                            <div class="button-group">
-                                <el-tooltip content="将数据转换为逗号分隔的数组" placement="top">
-                                    <button class="btn" @click="handleTransform('array')">
-                                        <span>转成数组</span>
-                                    </button>
-                                </el-tooltip>
-                                <el-tooltip content="将每个元素添加单引号" placement="top">
-                                    <button class="btn" @click="handleTransform('singleQuote')">
-                                        <span>转成带单引号数组</span>
-                                    </button>
-                                </el-tooltip>
-                                <el-tooltip content="将每个元素添加双引号" placement="top">
-                                    <button class="btn" @click="handleTransform('doubleQuote')">
-                                        <span>转成带引号数组</span>
-                                    </button>
-                                </el-tooltip>
-                                <el-tooltip content="为每个元素添加前缀" placement="top">
-                                    <button class="btn" @click="handleTransform('prefix')">
-                                        <span>加前缀</span>
-                                    </button>
-                                </el-tooltip>
-                                <el-tooltip content="删除重复数据" placement="top">
-                                    <button class="btn" @click="handleTransform('unique')">
-                                        <span>去重</span>
-                                    </button>
-                                </el-tooltip>
+                                <button class="btn btn-primary !min-h-[38px] sm:min-w-[180px]" title="按上方选项生成结果"
+                                    @click="handleTransform('custom')">按选项转换</button>
                             </div>
-                        </template>
-                    </el-card>
-                </el-col>
-                <el-col :span="12">
-                    <el-card class="box-card">
-                        <template #header>
-                            <div class="card-header">
-                                <span>数值计算工具</span>
-                            </div>
-                        </template>
-                        <template #default>
-                            <el-input v-model="textareaValue2" autosize type="textarea" placeholder="请输入要计算的数字，用逗号分隔"
-                                @input="handleInput2"></el-input>
-                            <transition name="el-zoom-in-center">
-                                <div v-if="result2" class="result-box">
-                                    <div class="result-title">计算结果：</div>
-                                    <div class="result-content">{{result2}}</div>
+                        </div>
+
+                        <div v-if="transformPanelTab === 'quick'" class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            <button class="btn !min-h-[38px]" title="将数据转换为逗号分隔的数组" @click="handleTransform('array')">转成数组</button>
+                            <button class="btn !min-h-[38px]" title="将每个元素添加单引号"
+                                @click="handleTransform('singleQuote')">转成带单引号数组</button>
+                            <button class="btn !min-h-[38px]" title="将每个元素添加双引号"
+                                @click="handleTransform('doubleQuote')">转成带引号数组</button>
+                            <button class="btn !min-h-[38px]" title="为每个元素添加前缀" @click="handleTransform('prefix')">加前缀</button>
+                            <button class="btn !min-h-[38px]" title="删除重复数据" @click="handleTransform('unique')">去重</button>
+                            <button class="btn !min-h-[38px]" title="生成 Java List.of 格式" @click="handleTransform('javaList')">Java
+                                List</button>
+                        </div>
+
+                        <transition name="fade">
+                            <div v-if="result1" class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                <div class="mb-3 flex items-center justify-between gap-3">
+                                    <h3 class="text-sm font-semibold text-white">转换结果</h3>
+                                    <span class="chip">{{result1 ? result1.length : 0}} chars</span>
                                 </div>
-                            </transition>
-                            <div class="button-group">
-                                <el-tooltip content="计算所有数字的和" placement="top">
-                                    <button class="btn" @click="handleCalculate('sum')">
-                                        <span>数字求和</span>
-                                    </button>
-                                </el-tooltip>
+                                <div class="code-block max-h-[260px]">{{result1}}</div>
                             </div>
-                        </template>
-                    </el-card>
-                </el-col>
-            </el-row>
+                        </transition>
+                    </section>
 
-            <!-- 新增 SQL 语句生成器 -->
-            <el-row :gutter="20">
-                <el-col :span="24">
-                    <el-card class="box-card">
-                        <template #header>
-                            <div class="card-header">
-                                <span>SQL 语句生成器</span>
+                    <section class="glass-panel rounded-2xl p-5">
+                        <div class="mb-5">
+                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-200/80">Calculate</p>
+                            <h2 class="mt-2 text-lg font-semibold text-white">数值计算</h2>
+                        </div>
+                        <label class="grid gap-2">
+                            <span class="text-sm font-medium text-slate-300">数字列表</span>
+                            <textarea v-model="textareaValue2" class="textarea-control"
+                                placeholder="请输入要计算的数字，用逗号分隔" @input="handleInput2"></textarea>
+                        </label>
+                        <div class="mt-4 flex flex-wrap gap-3">
+                            <button class="btn btn-primary" title="计算所有数字的和" @click="handleCalculate('sum')">数字求和</button>
+                        </div>
+
+                        <transition name="fade">
+                            <div v-if="result2" class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                <div class="mb-3 flex items-center justify-between gap-3">
+                                    <h3 class="text-sm font-semibold text-white">计算结果</h3>
+                                    <span class="chip">Sum</span>
+                                </div>
+                                <div class="code-block max-h-[220px]">{{result2}}</div>
                             </div>
-                        </template>
-                        <template #default>
-                            <!-- Excel 导入区域 -->
-                            <div class="excel-import-section">
-                                <el-upload :auto-upload="false" :show-file-list="false" :on-change="handleExcelUpload"
-                                    accept=".xlsx,.xls" drag>
-                                    <div class="upload-content">
-                                        <i class="el-icon-upload" style="font-size: 50px; color: #409EFF;"></i>
-                                        <div class="upload-text">📊 拖拽 Excel 文件到此处或点击上传</div>
-                                        <div class="upload-hint">支持 .xlsx 和 .xls 格式</div>
-                                    </div>
-                                </el-upload>
-                            </div>
+                        </transition>
+                    </section>
 
-                            <!-- Excel 数据预览 -->
-                            <transition name="el-zoom-in-center">
-                                <div v-if="excelData.length > 0" class="excel-preview">
-                                    <div class="preview-header">
-                                        <span class="preview-title">📋 Excel 数据预览（共 {{excelData.length}} 行）</span>
-                                        <el-button type="danger" size="small" @click="clearExcelData">清空数据</el-button>
-                                    </div>
+                    <section class="glass-panel rounded-2xl p-5 lg:col-span-2">
+                        <div class="mb-5">
+                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-200/80">Excel</p>
+                            <h2 class="mt-2 text-lg font-semibold text-white">数据输入与字段配置</h2>
+                        </div>
 
-                                    <!-- Sheet 切换标签 -->
-                                    <div v-if="sheetNames.length > 1" class="sheet-tabs">
-                                        <div class="sheet-tabs-label">📑 工作表：</div>
-                                        <el-radio-group v-model="currentSheet" @change="switchSheet" size="small">
-                                            <el-radio-button v-for="sheet in sheetNames" :key="sheet" :label="sheet">
-                                                {{sheet}}
-                                            </el-radio-button>
-                                        </el-radio-group>
-                                    </div>
+                        <label
+                            class="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 px-5 py-8 text-center transition hover:border-teal-300/40 hover:bg-teal-300/10"
+                            @dragover.prevent @drop.prevent="handleExcelDrop">
+                            <input class="hidden" type="file" accept=".xlsx,.xls" @change="handleExcelUpload">
+                            <span
+                                class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-teal-200/25 bg-teal-200/10 text-teal-100 transition group-hover:scale-105">
+                                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 16V4m0 0 4 4m-4-4-4 4" stroke="currentColor" stroke-width="1.8"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M4 15v2.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V15"
+                                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                                </svg>
+                            </span>
+                            <span class="text-sm font-semibold text-white">拖拽 Excel 文件到此处或点击上传</span>
+                            <span class="mt-1 text-xs text-slate-400">支持 .xlsx 和 .xls 格式</span>
+                        </label>
 
-                                    <!-- 字段选择 -->
-                                    <div class="field-selector">
-                                        <div style="display: flex; align-items: center; width: 100%; gap: 10px;">
-                                            <span class="selector-label">选择字段：</span>
-                                            <el-checkbox-group v-model="selectedColumns" @change="handleColumnSelect" style="flex: 1;">
-                                                <el-checkbox v-for="col in excelColumns" :key="col" :label="col">
-                                                    {{col}}
-                                                </el-checkbox>
-                                            </el-checkbox-group>
-                                            <el-button type="primary" size="small" @click="selectAllColumns(); handleColumnSelect();">
-                                                全选
-                                            </el-button>
+                        <transition name="fade">
+                            <div v-if="excelData.length > 0" class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h3 class="font-semibold text-white">Excel 数据预览</h3>
+                                        <p class="mt-1 text-sm text-slate-400">当前共 {{excelData.length}} 行数据</p>
+                                    </div>
+                                    <button class="btn btn-danger" @click="clearExcelData">清空数据</button>
+                                </div>
+
+                                <div v-if="sheetNames.length > 1" class="mt-4">
+                                    <div class="mb-2 text-xs font-medium text-slate-400">工作表</div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button v-for="sheet in sheetNames" :key="sheet" type="button"
+                                            class="tabs-button" :class="{ active: currentSheet === sheet }"
+                                            @click="switchSheet(sheet)">
+                                            {{sheet}}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                                    <div class="flex flex-col gap-3">
+                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                            <span class="text-sm font-semibold text-white">选择字段</span>
+                                            <button class="btn !min-h-[34px] !rounded-full !px-3 !text-xs"
+                                                @click="selectAllColumns(); handleColumnSelect();">全选</button>
                                         </div>
-                                        <div style="margin-top: 10px; font-size: 12px; color: #909399;">
-                                            💡 提示：复选框用于选择 Excel 的哪些列数据，生成的 SQL 字段名使用下方手动输入的字段名
+                                        <div class="flex flex-wrap gap-2">
+                                            <label v-for="col in excelColumns" :key="col" class="checkbox-tile">
+                                                <input v-model="selectedColumns" type="checkbox" :value="col"
+                                                    @change="handleColumnSelect">
+                                                <span>{{col}}</span>
+                                            </label>
                                         </div>
-                                    </div>
-
-                                    <!-- 数据表格 -->
-                                    <div class="table-wrapper">
-                                        <el-table :data="excelData.slice(0, 10)" border stripe max-height="300">
-                                            <el-table-column v-for="col in excelColumns" :key="col" :prop="col"
-                                                :label="col" min-width="120">
-                                            </el-table-column>
-                                        </el-table>
-                                        <div v-if="excelData.length > 10" class="table-hint">
-                                            仅显示前 10 行，实际共 {{excelData.length}} 行数据
-                                        </div>
+                                        <p class="text-xs leading-5 text-slate-400">
+                                            提示：复选框用于选择 Excel 的哪些列数据，生成的 SQL 字段名使用下方手动输入的字段名。
+                                        </p>
                                     </div>
                                 </div>
-                            </transition>
 
-                            <!-- 原有的手动输入区域 -->
-                            <div class="manual-input-section">
-                                <div class="section-divider">
-                                    <span>或者手动输入</span>
+                                <div class="mt-4 table-scroll max-h-[300px]">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th v-for="col in excelColumns" :key="col">{{col}}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(row, rowIndex) in excelData.slice(0, 10)" :key="rowIndex">
+                                                <td v-for="col in excelColumns" :key="col">{{row[col]}}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <el-row :gutter="15">
-                                    <el-col :span="12">
-                                        <el-input v-model="sqlConfig.tableName" placeholder="请输入表名，例如：users"
-                                            class="input">
-                                            <template #prepend>表名</template>
-                                        </el-input>
-                                    </el-col>
-                                    <el-col :span="12">
-                                        <el-input v-model="sqlConfig.columns"
-                                            placeholder="请输入字段名，多个用逗号分隔，例如：id, name, age" class="input">
-                                            <template #prepend>字段</template>
-                                        </el-input>
-                                    </el-col>
-                                </el-row>
-                                <el-input v-model="sqlData" :autosize="{ minRows: 4, maxRows: 8 }" type="textarea"
-                                    placeholder="请输入数据，每行一条记录&#10;&#10;示例1 - 生成INSERT（多列数据用逗号分隔）：&#10;张三,25,北京&#10;李四,30,上海&#10;&#10;示例2 - 生成IN查询（单列ID）：&#10;1001&#10;1002&#10;1003"
-                                    class="input" :disabled="excelData.length > 0" @input="handleSqlInput">
-                                </el-input>
-                            </div>
-                            <transition name="el-zoom-in-center">
-                                <div v-if="sqlResult" class="result-box sql-result">
-                                    <div class="result-title">生成的SQL语句：</div>
-                                    <div class="result-content sql-content">{{sqlResult}}</div>
+                                <div v-if="excelData.length > 10"
+                                    class="mt-3 rounded-xl border border-amber-300/15 bg-amber-300/8 px-3 py-2 text-center text-xs text-amber-100/80">
+                                    仅显示前 10 行，实际共 {{excelData.length}} 行数据
                                 </div>
-                            </transition>
-                            <div class="button-group">
-                                <el-tooltip content="生成INSERT语句，适合批量插入数据" placement="top">
-                                    <button class="btn" @click="generateSQL('insert')">
-                                        <span>生成INSERT</span>
-                                    </button>
-                                </el-tooltip>
-                                <el-tooltip content="生成UPDATE语句，适合批量更新数据" placement="top">
-                                    <button class="btn" @click="generateSQL('update')">
-                                        <span>生成UPDATE</span>
-                                    </button>
-                                </el-tooltip>
-                                <el-tooltip content="生成IN条件，适合批量查询" placement="top">
-                                    <button class="btn" @click="generateSQL('in')">
-                                        <span>生成IN查询</span>
-                                    </button>
-                                </el-tooltip>
-                                <el-tooltip content="生成DELETE语句，适合批量删除数据" placement="top">
-                                    <button class="btn" @click="generateSQL('delete')">
-                                        <span>生成DELETE</span>
-                                    </button>
-                                </el-tooltip>
                             </div>
-                        </template>
-                    </el-card>
-                </el-col>
-            </el-row>
-        </el-scrollbar>
+                        </transition>
 
-        <!-- 版本信息栏 -->
-        <div class="version-bar">
-            <span>v{{currentVersion}}</span>
-            <el-button type="primary" link size="small" @click="checkUpdate(false)" :loading="checking">
-                检查更新
-            </el-button>
+                        <div class="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-slate-500">
+                            <span class="h-px flex-1 bg-white/10"></span>
+                            <span>或者手动输入</span>
+                            <span class="h-px flex-1 bg-white/10"></span>
+                        </div>
+
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <label class="grid gap-2">
+                                <span class="text-sm font-medium text-slate-300">表名</span>
+                                <input v-model="sqlConfig.tableName" class="control" placeholder="请输入表名，例如：users">
+                            </label>
+                            <label class="grid gap-2">
+                                <span class="text-sm font-medium text-slate-300">字段</span>
+                                <input v-model="sqlConfig.columns" class="control"
+                                    placeholder="请输入字段名，多个用逗号分隔，例如：id, name, age">
+                            </label>
+                        </div>
+                        <label class="mt-3 grid gap-2">
+                            <span class="text-sm font-medium text-slate-300">SQL 手动数据</span>
+                            <textarea v-model="sqlData" class="textarea-control"
+                                :disabled="excelData.length > 0"
+                                placeholder="请输入数据，每行一条记录&#10;&#10;示例1 - 生成INSERT（多列数据用逗号分隔）：&#10;张三,25,北京&#10;李四,30,上海&#10;&#10;示例2 - 生成IN查询（单列ID）：&#10;1001&#10;1002&#10;1003"
+                                @input="handleSqlInput"></textarea>
+                        </label>
+
+                        <div class="compact-config mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+                            <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-white">SQL 输出选项</div>
+                                    <div class="mt-1 text-xs text-slate-500">默认不改变原生成结果，需要时再开启</div>
+                                </div>
+                                <span class="chip">Optional</span>
+                            </div>
+                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <label class="grid gap-2">
+                                    <span class="text-xs font-medium text-slate-400">字段 / 表名包裹</span>
+                                    <select v-model="sqlOptions.identifierQuote" class="select-control">
+                                        <option value="none">不包裹</option>
+                                        <option value="backtick">MySQL 反引号</option>
+                                        <option value="double">双引号</option>
+                                        <option value="bracket">SQL Server 方括号</option>
+                                    </select>
+                                </label>
+                                <label class="checkbox-tile self-end">
+                                    <input v-model="sqlOptions.wrapTransaction" type="checkbox">
+                                    <span>包裹事务 BEGIN / COMMIT</span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+
+                <section class="flex flex-col gap-5">
+                    <section class="glass-panel rounded-2xl p-5">
+                        <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-fuchsia-200/80">SQL
+                                    Generator</p>
+                                <h2 class="mt-2 text-lg font-semibold text-white">SQL 输出控制台</h2>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                                <button class="btn btn-primary" title="生成INSERT语句，适合批量插入数据"
+                                    @click="generateSQL('insert')">生成INSERT</button>
+                                <button class="btn" title="生成UPDATE语句，适合批量更新数据"
+                                    @click="generateSQL('update')">生成UPDATE</button>
+                                <button class="btn" title="生成IN条件，适合批量查询" @click="generateSQL('in')">生成IN查询</button>
+                                <button class="btn btn-danger" title="生成DELETE语句，适合批量删除数据"
+                                    @click="generateSQL('delete')">生成DELETE</button>
+                            </div>
+                        </div>
+
+                        <div v-if="sqlResult" class="mb-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex flex-wrap gap-2">
+                                <span class="chip">语句 {{getSqlStatementCount(sqlResult)}}</span>
+                                <span class="chip">行数 {{getSqlLineCount(sqlResult)}}</span>
+                                <span class="chip">{{sqlResult.length}} chars</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 sm:flex">
+                                <button class="btn !min-h-[34px] !rounded-xl !px-3 !text-xs" @click="copySqlResult">复制</button>
+                                <button class="btn !min-h-[34px] !rounded-xl !px-3 !text-xs" @click="downloadSqlResult">下载 .sql</button>
+                                <button class="btn btn-danger !min-h-[34px] !rounded-xl !px-3 !text-xs" @click="clearSqlResult">清空</button>
+                            </div>
+                        </div>
+
+                        <transition name="fade">
+                            <div v-if="sqlResult" class="code-block">{{sqlResult}}</div>
+                        </transition>
+                        <div v-if="!sqlResult"
+                            class="flex min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-200">等待生成 SQL</p>
+                                <p class="mt-2 text-sm leading-6 text-slate-500">导入 Excel 或输入数据后，选择 INSERT、UPDATE、IN 或
+                                    DELETE。</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="hidden">
+                        <div class="glass-panel rounded-2xl p-5">
+                            <div class="mb-4 flex items-center justify-between">
+                                <h2 class="text-lg font-semibold text-white">转换结果</h2>
+                                <span class="chip">{{result1 ? result1.length : 0}} chars</span>
+                            </div>
+                            <transition name="fade">
+                                <div v-if="result1" class="code-block max-h-[320px]">{{result1}}</div>
+                            </transition>
+                            <div v-if="!result1"
+                                class="flex min-h-[180px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/5 text-sm text-slate-500">
+                                转换结果将在这里显示
+                            </div>
+                        </div>
+
+                        <div class="glass-panel rounded-2xl p-5">
+                            <div class="mb-4 flex items-center justify-between">
+                                <h2 class="text-lg font-semibold text-white">计算结果</h2>
+                                <span class="chip">Sum</span>
+                            </div>
+                            <transition name="fade">
+                                <div v-if="result2" class="code-block max-h-[320px]">{{result2}}</div>
+                            </transition>
+                            <div v-if="!result2"
+                                class="flex min-h-[180px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/5 text-sm text-slate-500">
+                                数字求和结果将在这里显示
+                            </div>
+                        </div>
+                    </section>
+
+                </section>
+            </section>
+        </main>
+
+        
+
+        <div class="fixed right-4 top-4 z-50 flex w-[min(420px,calc(100vw-2rem))] flex-col gap-3">
+            <transition-group name="fade">
+                <div v-for="toast in toasts" :key="toast.id"
+                    class="rounded-2xl border px-4 py-3 text-sm shadow-panel backdrop-blur-xl"
+                    :class="toastClass(toast.type)">
+                    {{toast.message}}
+                </div>
+            </transition-group>
         </div>
 
-        <!-- 更新弹窗 -->
-        <el-dialog v-model="showUpdateDialog" title="发现新版本" width="420px" :close-on-click-modal="false" center>
-            <div class="update-dialog-content">
-                <div class="update-version-info">
-                    <div class="update-version-row">
-                        <span class="update-label">当前版本：</span>
-                        <el-tag type="info">v{{currentVersion}}</el-tag>
+        <transition name="fade">
+            <div v-if="showUpdateDialog" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-slate-950/90 p-5 shadow-panel">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-teal-200/80">Update</p>
+                            <h2 class="mt-2 text-xl font-semibold text-white">发现新版本</h2>
+                        </div>
+                        <button class="btn !min-h-[36px] !w-9 !rounded-full !p-0" @click="showUpdateDialog = false"
+                            aria-label="关闭">
+                            ×
+                        </button>
                     </div>
-                    <div class="update-arrow">→</div>
-                    <div class="update-version-row">
-                        <span class="update-label">最新版本：</span>
-                        <el-tag type="success">v{{newVersion}}</el-tag>
+                    <div class="mt-5 flex flex-wrap items-center justify-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div class="text-center">
+                            <div class="text-xs text-slate-500">当前版本</div>
+                            <div class="mt-1 rounded-full bg-white/10 px-3 py-1 text-sm text-slate-200">
+                                v{{currentVersion}}
+                            </div>
+                        </div>
+                        <div class="text-teal-200">→</div>
+                        <div class="text-center">
+                            <div class="text-xs text-slate-500">最新版本</div>
+                            <div class="mt-1 rounded-full bg-teal-300/15 px-3 py-1 text-sm text-teal-100">
+                                v{{newVersion}}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div class="mb-2 text-sm font-semibold text-white">更新内容</div>
+                        <div class="whitespace-pre-wrap text-sm leading-6 text-slate-300">{{updateLog}}</div>
+                    </div>
+                    <div class="mt-3 text-right text-xs text-slate-500">发布日期：{{updateDate}}</div>
+                    <div class="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <button class="btn" @click="showUpdateDialog = false">暂不更新</button>
+                        <button class="btn btn-primary" @click="downloadUpdate">下载新版本</button>
                     </div>
                 </div>
-                <div class="update-log">
-                    <div class="update-log-title">更新内容：</div>
-                    <div class="update-log-text">{{updateLog}}</div>
-                </div>
-                <div class="update-date">发布日期：{{updateDate}}</div>
             </div>
-            <template #footer>
-                <el-button @click="showUpdateDialog = false">暂不更新</el-button>
-                <el-button type="primary" @click="downloadUpdate">下载新版本</el-button>
-            </template>
-        </el-dialog>
+        </transition>
     </div>
 
     <script>
-        const { createApp, ref, reactive, toRefs, onMounted } = Vue;
+        const { createApp, reactive, toRefs, onMounted } = Vue;
 
         const CURRENT_VERSION = '1.0.3';
         const GITHUB_REPO = 'QC-Fan/JavaUtils';
         const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/version.json`;
         const DOWNLOAD_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/excel-tools.html`;
 
-        // 工具函数
-        const utils = {
-            copyToClipboard(text) {
-                try {
-                    const el = document.createElement('textarea');
-                    el.value = text;
-                    el.setAttribute('readonly', '');
-                    el.style.position = 'absolute';
-                    el.style.left = '-9999px';
-                    document.body.appendChild(el);
-                    const selected = document.getSelection().rangeCount > 0
-                        ? document.getSelection().getRangeAt(0)
-                        : false;
-                    el.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(el);
-                    if (selected) {
-                        document.getSelection().removeAllRanges();
-                        document.getSelection().addRange(selected);
-                    }
-                    ElementPlus.ElMessage.success('已复制到剪贴板');
-                } catch (err) {
-                    console.error('复制失败:', err);
-                    ElementPlus.ElMessage.error('复制失败，请手动复制');
-                }
-            },
-
-            // 数据验证
-            validateInput(value, type = 'text') {
-                if (!value || value.trim() === '') {
-                    throw new Error('请输入数据');
-                }
-                if (type === 'number') {
-                    const numbers = value.split(',').map(n => n.trim());
-                    if (numbers.some(n => isNaN(Number(n)))) {
-                        throw new Error('请输入有效的数字，并用逗号分隔');
-                    }
-                }
-                return true;
-            }
-        };
-
         const app = createApp({
             setup() {
-                // 响应式数据
+                const toastState = reactive({
+                    toasts: []
+                });
+
+                const notify = (message, type = 'info') => {
+                    const id = Date.now() + Math.random();
+                    toastState.toasts.push({ id, message, type });
+                    window.setTimeout(() => {
+                        const index = toastState.toasts.findIndex(item => item.id === id);
+                        if (index !== -1) {
+                            toastState.toasts.splice(index, 1);
+                        }
+                    }, 2600);
+                };
+
+                const toastClass = (type) => {
+                    const map = {
+                        success: 'border-white/20 bg-neutral-950/95 text-neutral-50',
+                        error: 'border-red-900/60 bg-neutral-950/95 text-neutral-50',
+                        warning: 'border-neutral-600/70 bg-neutral-950/95 text-neutral-50',
+                        info: 'border-white/20 bg-neutral-950/95 text-neutral-50'
+                    };
+                    return map[type] || map.info;
+                };
+
+                const utils = {
+                    copyToClipboard(text) {
+                        try {
+                            const el = document.createElement('textarea');
+                            el.value = text;
+                            el.setAttribute('readonly', '');
+                            el.style.position = 'absolute';
+                            el.style.left = '-9999px';
+                            document.body.appendChild(el);
+                            const selected = document.getSelection().rangeCount > 0
+                                ? document.getSelection().getRangeAt(0)
+                                : false;
+                            el.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(el);
+                            if (selected) {
+                                document.getSelection().removeAllRanges();
+                                document.getSelection().addRange(selected);
+                            }
+                            notify('已复制到剪贴板', 'success');
+                        } catch (err) {
+                            console.error('复制失败:', err);
+                            notify('复制失败，请手动复制', 'error');
+                        }
+                    },
+
+                    validateInput(value, type = 'text') {
+                        if (!value || value.trim() === '') {
+                            throw new Error('请输入数据');
+                        }
+                        if (type === 'number') {
+                            const numbers = value.split(',').map(n => n.trim());
+                            if (numbers.some(n => isNaN(Number(n)))) {
+                                throw new Error('请输入有效的数字，并用逗号分隔');
+                            }
+                        }
+                        return true;
+                    }
+                };
+
                 const state = reactive({
                     textareaValue1: '',
                     textareaValue2: '',
                     qzValue: '',
                     result1: '',
                     result2: '',
-                    // SQL 生成器相关
+                    transformPanelTab: 'quick',
+                    transformOptions: {
+                        delimiter: 'commaSpace',
+                        customDelimiter: '',
+                        wrapper: 'none',
+                        customPrefix: '',
+                        customSuffix: '',
+                        sortMode: 'none',
+                        itemsPerLine: 0,
+                        trim: true,
+                        removeEmpty: true,
+                        unique: false,
+                        normalizeComma: false,
+                        caseMode: 'none'
+                    },
+                    transformStats: {
+                        total: 0,
+                        empty: 0,
+                        unique: 0,
+                        duplicate: 0,
+                        outputLength: 0
+                    },
+                    duplicateItems: [],
                     sqlData: '',
                     sqlResult: '',
                     sqlConfig: {
                         tableName: '',
                         columns: ''
                     },
-                    // Excel 导入相关
+                    sqlOptions: {
+                        identifierQuote: 'none',
+                        wrapTransaction: false
+                    },
                     excelData: [],
                     excelColumns: [],
                     selectedColumns: [],
@@ -335,95 +996,118 @@
                     currentSheet: ''
                 });
 
-                // 输入处理
-                const handleInput1 = (value) => {
+                const updateState = reactive({
+                    showUpdateDialog: false,
+                    newVersion: '',
+                    updateLog: '',
+                    updateDate: '',
+                    checking: false
+                });
+
+                const handleInput1 = () => {
                     state.result1 = '';
+                    state.transformStats = {
+                        total: 0,
+                        empty: 0,
+                        unique: 0,
+                        duplicate: 0,
+                        outputLength: 0
+                    };
+                    state.duplicateItems = [];
                 };
 
-                const handleInput2 = (value) => {
+                const handleInput2 = () => {
                     state.result2 = '';
                 };
 
-                const handleSqlInput = (value) => {
+                const handleSqlInput = () => {
                     state.sqlResult = '';
                 };
 
-                // Excel 文件上传处理
-                const handleExcelUpload = (file) => {
+                const readExcelFile = (rawFile) => {
+                    if (!rawFile) return;
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         try {
                             const data = new Uint8Array(e.target.result);
                             const workbook = XLSX.read(data, { type: 'array' });
                             if (workbook.SheetNames.length === 0) {
-                                ElementPlus.ElMessage.error('Excel 文件为空或格式不正确');
+                                notify('Excel 文件为空或格式不正确', 'error');
                                 return;
                             }
 
-                            // 保存 workbook 和 sheet 名称列表
                             state.excelWorkbook = workbook;
                             state.sheetNames = workbook.SheetNames;
                             state.currentSheet = workbook.SheetNames[0];
 
-                            // 加载第一个 sheet 的数据
                             loadSheetData(state.currentSheet);
 
-                            ElementPlus.ElMessage.success(`成功导入 Excel 文件，共 ${workbook.SheetNames.length} 个工作表`);
+                            notify(`成功导入 Excel 文件，共 ${workbook.SheetNames.length} 个工作表`, 'success');
                         } catch (err) {
                             console.error('Excel 解析失败:', err);
-                            ElementPlus.ElMessage.error('Excel 文件解析失败，请检查文件格式');
+                            notify('Excel 文件解析失败，请检查文件格式', 'error');
                         }
                     };
-                    reader.readAsArrayBuffer(file.raw);
+                    reader.readAsArrayBuffer(rawFile);
                 };
 
-                // 加载指定 Sheet 的数据
+                const handleExcelUpload = (file) => {
+                    const rawFile = file && file.raw
+                        ? file.raw
+                        : file && file.target && file.target.files
+                            ? file.target.files[0]
+                            : file;
+                    readExcelFile(rawFile);
+                    if (file && file.target) {
+                        file.target.value = '';
+                    }
+                };
+
+                const handleExcelDrop = (event) => {
+                    const rawFile = event.dataTransfer && event.dataTransfer.files
+                        ? event.dataTransfer.files[0]
+                        : null;
+                    readExcelFile(rawFile);
+                };
+
                 const loadSheetData = (sheetName) => {
                     if (!state.excelWorkbook) return;
 
                     try {
                         const worksheet = state.excelWorkbook.Sheets[sheetName];
-                        
-                        // 使用 defval 选项确保空单元格也会被保留
-                        // header: 1 选项先获取原始数据，包括表头
-                        const rawData = XLSX.utils.sheet_to_json(worksheet, { 
+                        const rawData = XLSX.utils.sheet_to_json(worksheet, {
                             header: 1,
-                            defval: '',  // 空单元格用空字符串填充
-                            raw: false   // 保持原始格式
+                            defval: '',
+                            raw: false
                         });
 
                         if (rawData.length === 0) {
-                            ElementPlus.ElMessage.warning(`工作表 "${sheetName}" 为空`);
+                            notify(`工作表 "${sheetName}" 为空`, 'warning');
                             state.excelData = [];
                             state.excelColumns = [];
                             state.selectedColumns = [];
                             return;
                         }
 
-                        // 第一行作为表头
                         const headers = rawData[0];
-                        
-                        // 过滤掉空的表头
                         const validHeaders = headers.map((h, idx) => {
                             if (!h || h.toString().trim() === '') {
-                                return `Column_${idx + 1}`; // 给空表头一个默认名称
+                                return `Column_${idx + 1}`;
                             }
                             return h.toString().trim();
                         });
 
-                        // 从第二行开始是数据，转换为对象数组
                         const dataRows = rawData.slice(1);
                         const jsonData = dataRows.map(row => {
                             const obj = {};
                             validHeaders.forEach((header, idx) => {
-                                // 确保每个字段都存在，即使是空值
                                 obj[header] = row[idx] !== undefined && row[idx] !== null ? row[idx] : '';
                             });
                             return obj;
                         });
 
                         if (jsonData.length === 0) {
-                            ElementPlus.ElMessage.warning(`工作表 "${sheetName}" 只有表头，没有数据`);
+                            notify(`工作表 "${sheetName}" 只有表头，没有数据`, 'warning');
                             state.excelData = [];
                             state.excelColumns = validHeaders;
                             state.selectedColumns = [...validHeaders];
@@ -432,22 +1116,20 @@
 
                         state.excelData = jsonData;
                         state.excelColumns = validHeaders;
-                        state.selectedColumns = [...validHeaders]; // 默认全选
+                        state.selectedColumns = [...validHeaders];
                         state.currentSheet = sheetName;
 
-                        ElementPlus.ElMessage.success(`已加载工作表 "${sheetName}"，共 ${jsonData.length} 行数据`);
+                        notify(`已加载工作表 "${sheetName}"，共 ${jsonData.length} 行数据`, 'success');
                     } catch (err) {
                         console.error('Sheet 加载失败:', err);
-                        ElementPlus.ElMessage.error('工作表加载失败');
+                        notify('工作表加载失败', 'error');
                     }
                 };
 
-                // 切换 Sheet
                 const switchSheet = (sheetName) => {
                     loadSheetData(sheetName);
                 };
 
-                // 清空 Excel 数据
                 const clearExcelData = () => {
                     state.excelData = [];
                     state.excelColumns = [];
@@ -457,58 +1139,185 @@
                     state.currentSheet = '';
                     state.sqlConfig.columns = '';
                     state.sqlResult = '';
-                    ElementPlus.ElMessage.success('已清空数据');
+                    notify('已清空数据', 'success');
                 };
 
-                // 全选字段
                 const selectAllColumns = () => {
                     state.selectedColumns = [...state.excelColumns];
                 };
 
-                // 监听字段选择变化
                 const handleColumnSelect = () => {
-                    // 当用户没有手动输入字段时，根据选择的列自动填充
                     if (state.excelColumns.length > 0 && state.selectedColumns.length > 0) {
                         state.sqlConfig.columns = state.selectedColumns.join(', ');
                     }
                 };
 
-                // 数据转换处理
+                const getDelimiter = (type) => {
+                    const map = {
+                        comma: ',',
+                        commaSpace: ', ',
+                        newline: '\n',
+                        space: ' ',
+                        semicolon: ';'
+                    };
+                    const delimiterType = type || state.transformOptions.delimiter;
+                    return delimiterType === 'custom'
+                        ? state.transformOptions.customDelimiter
+                        : map[delimiterType];
+                };
+
+                const getWrapper = (type) => {
+                    const wrapperType = type || state.transformOptions.wrapper;
+                    const map = {
+                        none: ['', ''],
+                        single: ["'", "'"],
+                        double: ['"', '"'],
+                        backtick: ['`', '`'],
+                        paren: ['(', ')'],
+                        bracket: ['[', ']'],
+                        custom: [state.transformOptions.customPrefix, state.transformOptions.customSuffix]
+                    };
+                    return map[wrapperType] || map.none;
+                };
+
+                const collectTransformLines = () => {
+                    utils.validateInput(state.textareaValue1);
+                    const rawLines = state.textareaValue1.split(/\n/);
+                    const counts = new Map();
+                    const normalized = rawLines.map(line => {
+                        let value = state.transformOptions.trim ? line.trim() : line;
+                        if (state.transformOptions.normalizeComma) {
+                            value = value.replace(/，/g, ',');
+                        }
+                        if (state.transformOptions.caseMode === 'upper') {
+                            value = value.toUpperCase();
+                        }
+                        if (state.transformOptions.caseMode === 'lower') {
+                            value = value.toLowerCase();
+                        }
+                        return value;
+                    });
+
+                    let lines = state.transformOptions.removeEmpty
+                        ? normalized.filter(line => line !== '')
+                        : normalized;
+
+                    lines.forEach(line => {
+                        if (line !== '') {
+                            counts.set(line, (counts.get(line) || 0) + 1);
+                        }
+                    });
+
+                    const duplicateItems = Array.from(counts.entries())
+                        .filter(([, count]) => count > 1)
+                        .map(([value, count]) => ({ value, count }));
+
+                    if (state.transformOptions.unique) {
+                        lines = Array.from(new Set(lines));
+                    }
+
+                    switch (state.transformOptions.sortMode) {
+                        case 'textAsc':
+                            lines = [...lines].sort((a, b) => a.localeCompare(b, 'zh-CN'));
+                            break;
+                        case 'textDesc':
+                            lines = [...lines].sort((a, b) => b.localeCompare(a, 'zh-CN'));
+                            break;
+                        case 'numberAsc':
+                            lines = [...lines].sort((a, b) => Number(a) - Number(b));
+                            break;
+                        case 'numberDesc':
+                            lines = [...lines].sort((a, b) => Number(b) - Number(a));
+                            break;
+                    }
+
+                    state.duplicateItems = duplicateItems;
+                    state.transformStats = {
+                        total: rawLines.length,
+                        empty: rawLines.filter(line => line.trim() === '').length,
+                        unique: counts.size,
+                        duplicate: duplicateItems.length,
+                        outputLength: 0
+                    };
+
+                    return lines;
+                };
+
+                const formatTransformResult = (lines, wrapperType, delimiterType) => {
+                    const delimiter = getDelimiter(delimiterType);
+                    const [prefix, suffix] = getWrapper(wrapperType);
+                    const wrappedLines = lines.map(line => `${prefix}${line}${suffix}`);
+                    const itemsPerLine = Number(state.transformOptions.itemsPerLine) || 0;
+
+                    if (itemsPerLine > 0) {
+                        const groups = [];
+                        for (let i = 0; i < wrappedLines.length; i += itemsPerLine) {
+                            groups.push(wrappedLines.slice(i, i + itemsPerLine).join(delimiter));
+                        }
+                        return groups.join('\n');
+                    }
+
+                    return wrappedLines.join(delimiter);
+                };
+
+                const formatJavaList = (lines) => {
+                    const values = lines.map(line => `"${String(line).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
+                    const itemsPerLine = Number(state.transformOptions.itemsPerLine) || 0;
+                    if (itemsPerLine > 0) {
+                        const groups = [];
+                        for (let i = 0; i < values.length; i += itemsPerLine) {
+                            groups.push(`    ${values.slice(i, i + itemsPerLine).join(', ')}`);
+                        }
+                        return `List<String> list = List.of(\n${groups.join(',\n')}\n);`;
+                    }
+                    return `List<String> list = List.of(${values.join(', ')});`;
+                };
+
                 const handleTransform = (type) => {
                     try {
-                        utils.validateInput(state.textareaValue1);
-                        const lines = state.textareaValue1.split(/\n/).filter(line => line.trim());
+                        let wrapperType;
+                        let delimiterType;
+
+                        if (type === 'array') {
+                            delimiterType = 'comma';
+                            wrapperType = 'none';
+                        } else if (type === 'singleQuote') {
+                            delimiterType = 'commaSpace';
+                            wrapperType = 'single';
+                        } else if (type === 'doubleQuote') {
+                            delimiterType = 'commaSpace';
+                            wrapperType = 'double';
+                        }
+
+                        let lines = collectTransformLines();
                         let result;
 
                         switch (type) {
-                            case 'array':
-                                result = lines.join(',');
-                                break;
-                            case 'singleQuote':
-                                result = lines.map(line => `'${line}'`).join(', ');
-                                break;
-                            case 'doubleQuote':
-                                result = lines.map(line => `"${line}"`).join(', ');
-                                break;
                             case 'prefix':
                                 if (!state.qzValue) {
                                     throw new Error('请输入前缀');
                                 }
-                                result = lines.map(line => `${state.qzValue}${line}`).join(', ');
+                                result = formatTransformResult(lines.map(line => `${state.qzValue}${line}`), wrapperType, delimiterType);
                                 break;
                             case 'unique':
-                                result = Array.from(new Set(lines)).join(', ');
+                                result = formatTransformResult(Array.from(new Set(lines)), 'none', 'commaSpace');
+                                break;
+                            case 'javaList':
+                                result = formatJavaList(lines);
+                                break;
+                            default:
+                                result = formatTransformResult(lines, wrapperType, delimiterType);
                                 break;
                         }
 
+                        state.transformStats.outputLength = result.length;
                         state.result1 = result;
                         utils.copyToClipboard(result);
                     } catch (err) {
-                        ElementPlus.ElMessage.error(err.message);
+                        notify(err.message, 'error');
                     }
                 };
 
-                // 数值计算处理
                 const handleCalculate = (type) => {
                     try {
                         utils.validateInput(state.textareaValue2, 'number');
@@ -526,14 +1335,79 @@
                         state.result2 = result;
                         utils.copyToClipboard(result.toString());
                     } catch (err) {
-                        ElementPlus.ElMessage.error(err.message);
+                        notify(err.message, 'error');
                     }
                 };
 
-                // SQL 生成处理
+                const quoteSqlIdentifier = (name) => {
+                    const value = String(name || '').trim();
+                    if (!value || state.sqlOptions.identifierQuote === 'none') {
+                        return value;
+                    }
+                    if (value === '*') {
+                        return value;
+                    }
+                    if (state.sqlOptions.identifierQuote === 'backtick') {
+                        return `\`${value.replace(/`/g, '``')}\``;
+                    }
+                    if (state.sqlOptions.identifierQuote === 'double') {
+                        return `"${value.replace(/"/g, '""')}"`;
+                    }
+                    if (state.sqlOptions.identifierQuote === 'bracket') {
+                        return `[${value.replace(/]/g, ']]')}]`;
+                    }
+                    return value;
+                };
+
+                const applySqlOutputOptions = (result) => {
+                    if (!state.sqlOptions.wrapTransaction || !result.trim()) {
+                        return result;
+                    }
+                    return `BEGIN;\n${result}\nCOMMIT;`;
+                };
+
+                const getSqlStatementCount = (value) => {
+                    if (!value) return 0;
+                    return value.split(';').map(item => item.trim()).filter(Boolean).length;
+                };
+
+                const getSqlLineCount = (value) => {
+                    if (!value) return 0;
+                    return value.split(/\n/).filter(line => line.trim()).length;
+                };
+
+                const copySqlResult = () => {
+                    if (!state.sqlResult) {
+                        notify('暂无 SQL 可复制', 'warning');
+                        return;
+                    }
+                    utils.copyToClipboard(state.sqlResult);
+                };
+
+                const clearSqlResult = () => {
+                    state.sqlResult = '';
+                    notify('SQL 结果已清空', 'success');
+                };
+
+                const downloadSqlResult = () => {
+                    if (!state.sqlResult) {
+                        notify('暂无 SQL 可下载', 'warning');
+                        return;
+                    }
+                    const blob = new Blob([state.sqlResult], { type: 'text/sql;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${state.sqlConfig.tableName || 'generated'}-${Date.now()}.sql`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    notify('SQL 文件已下载', 'success');
+                };
+
                 const generateSQL = (type) => {
                     try {
-                        // 检查是使用 Excel 数据还是手动输入
                         const useExcelData = state.excelData.length > 0;
 
                         if (!useExcelData) {
@@ -545,23 +1419,21 @@
                         }
 
                         let result = '';
+                        const sqlTableName = quoteSqlIdentifier(state.sqlConfig.tableName);
 
                         if (useExcelData) {
-                            // 使用 Excel 数据生成 SQL
                             if (!state.sqlConfig.columns) {
                                 throw new Error('请输入字段名');
                             }
-                            
+
                             if (state.selectedColumns.length === 0) {
                                 throw new Error('请至少选择一个字段（复选框）');
                             }
 
-                            // SQL 字段名：使用手动输入的字段名
                             const sqlFieldNames = state.sqlConfig.columns.split(',').map(c => c.trim());
-                            // Excel 列名：使用复选框选中的列名（用于从 Excel 中取数据）
+                            const outputSqlFieldNames = sqlFieldNames.map(quoteSqlIdentifier);
                             const excelColumnNames = state.selectedColumns;
 
-                            // 检查数量是否匹配
                             if (sqlFieldNames.length !== excelColumnNames.length) {
                                 throw new Error(`字段数量不匹配：输入了 ${sqlFieldNames.length} 个字段名，但选择了 ${excelColumnNames.length} 个 Excel 列`);
                             }
@@ -573,36 +1445,29 @@
                             switch (type) {
                                 case 'insert':
                                     result = state.excelData.map((row, idx) => {
-                                        // 从 Excel 列名取数据，映射到 SQL 字段名
                                         const values = excelColumnNames.map((excelCol, colIdx) => {
                                             const value = row[excelCol];
-                                            
-                                            // 调试：打印前2行的值
+
                                             if (idx < 2) {
                                                 console.log(`第 ${idx + 1} 行，Excel列 "${excelCol}" -> SQL字段 "${sqlFieldNames[colIdx]}"，值:`, value, '类型:', typeof value);
                                             }
-                                            // 处理空值
                                             if (value === null || value === undefined) {
                                                 return 'NULL';
                                             }
-                                            // 处理空字符串
                                             if (value === '') {
-                                                return "''";  // 空字符串
+                                                return "''";
                                             }
-                                            // 转换为字符串后判断
                                             const strValue = String(value).trim();
                                             if (strValue === '') {
                                                 return "''";
                                             }
-                                            // 判断是否为数字
                                             const numValue = Number(strValue);
                                             if (!isNaN(numValue) && strValue !== '') {
                                                 return numValue;
                                             }
-                                            // 字符串需要转义单引号
                                             return `'${strValue.replace(/'/g, "''")}'`;
                                         }).join(', ');
-                                        return `INSERT INTO ${state.sqlConfig.tableName} (${sqlFieldNames.join(', ')}) VALUES (${values});`;
+                                        return `INSERT INTO ${sqlTableName} (${outputSqlFieldNames.join(', ')}) VALUES (${values});`;
                                     }).join('\n');
                                     break;
 
@@ -612,22 +1477,22 @@
                                     }
                                     const inValues = state.excelData
                                         .map(row => {
-                                            const value = row[excelColumnNames[0]]; // 从 Excel 列取数据
+                                            const value = row[excelColumnNames[0]];
                                             if (value === null || value === undefined || value === '') {
-                                                return null; // 跳过空值
+                                                return null;
                                             }
                                             const strValue = String(value).trim();
                                             if (strValue === '') return null;
-                                            
+
                                             const numValue = Number(strValue);
                                             if (!isNaN(numValue) && strValue !== '') {
                                                 return numValue;
                                             }
                                             return `'${strValue.replace(/'/g, "''")}'`;
                                         })
-                                        .filter(v => v !== null) // 过滤掉空值
+                                        .filter(v => v !== null)
                                         .join(', ');
-                                    result = `SELECT * FROM ${state.sqlConfig.tableName} WHERE ${sqlFieldNames[0]} IN (${inValues});`;
+                                    result = `SELECT * FROM ${sqlTableName} WHERE ${outputSqlFieldNames[0]} IN (${inValues});`;
                                     break;
 
                                 case 'delete':
@@ -636,19 +1501,19 @@
                                     }
                                     result = state.excelData
                                         .filter(row => {
-                                            const value = row[excelColumnNames[0]]; // 从 Excel 列取数据
+                                            const value = row[excelColumnNames[0]];
                                             return value !== null && value !== undefined && value !== '';
                                         })
                                         .map(row => {
-                                            const value = row[excelColumnNames[0]]; // 从 Excel 列取数据
+                                            const value = row[excelColumnNames[0]];
                                             const strValue = String(value).trim();
-                                            
+
                                             const numValue = Number(strValue);
-                                            const whereValue = !isNaN(numValue) && strValue !== '' 
-                                                ? numValue 
+                                            const whereValue = !isNaN(numValue) && strValue !== ''
+                                                ? numValue
                                                 : `'${strValue.replace(/'/g, "''")}'`;
-                                            
-                                            return `DELETE FROM ${state.sqlConfig.tableName} WHERE ${sqlFieldNames[0]} = ${whereValue};`;
+
+                                            return `DELETE FROM ${sqlTableName} WHERE ${outputSqlFieldNames[0]} = ${whereValue};`;
                                         })
                                         .join('\n');
                                     break;
@@ -657,7 +1522,6 @@
                                     throw new Error('Excel 模式下暂不支持 UPDATE 语句，请使用手动输入模式');
                             }
                         } else {
-                            // 使用手动输入数据生成 SQL
                             const lines = state.sqlData.split(/\n/).filter(line => line.trim());
 
                             switch (type) {
@@ -666,12 +1530,16 @@
                                         throw new Error('请输入字段名');
                                     }
                                     const columns = state.sqlConfig.columns.split(',').map(c => c.trim());
+                                    const outputColumns = columns.map(quoteSqlIdentifier);
+                                    const outputColumnsText = state.sqlOptions.identifierQuote === 'none'
+                                        ? state.sqlConfig.columns
+                                        : outputColumns.join(', ');
                                     result = lines.map(line => {
                                         const values = line.split(',').map(v => {
                                             const trimmed = v.trim();
                                             return isNaN(trimmed) ? `'${trimmed}'` : trimmed;
                                         }).join(', ');
-                                        return `INSERT INTO ${state.sqlConfig.tableName} (${state.sqlConfig.columns}) VALUES (${values});`;
+                                        return `INSERT INTO ${sqlTableName} (${outputColumnsText}) VALUES (${values});`;
                                     }).join('\n');
                                     break;
 
@@ -684,11 +1552,11 @@
                                         throw new Error('请输入正确格式（例如：status=已完成,id）');
                                     }
                                     const updateClause = parts[0];
-                                    const whereColumn = parts[1];
+                                    const whereColumn = quoteSqlIdentifier(parts[1]);
                                     result = lines.map(line => {
                                         const value = line.trim();
                                         const whereValue = isNaN(value) ? `'${value}'` : value;
-                                        return `UPDATE ${state.sqlConfig.tableName} SET ${updateClause} WHERE ${whereColumn} = ${whereValue};`;
+                                        return `UPDATE ${sqlTableName} SET ${updateClause} WHERE ${whereColumn} = ${whereValue};`;
                                     }).join('\n');
                                     break;
 
@@ -700,7 +1568,7 @@
                                         const value = line.trim();
                                         return isNaN(value) ? `'${value}'` : value;
                                     }).join(', ');
-                                    result = `SELECT * FROM ${state.sqlConfig.tableName} WHERE ${state.sqlConfig.columns.trim()} IN (${inValues});`;
+                                    result = `SELECT * FROM ${sqlTableName} WHERE ${quoteSqlIdentifier(state.sqlConfig.columns.trim())} IN (${inValues});`;
                                     break;
 
                                 case 'delete':
@@ -710,26 +1578,19 @@
                                     result = lines.map(line => {
                                         const value = line.trim();
                                         const whereValue = isNaN(value) ? `'${value}'` : value;
-                                        return `DELETE FROM ${state.sqlConfig.tableName} WHERE ${state.sqlConfig.columns.trim()} = ${whereValue};`;
+                                        return `DELETE FROM ${sqlTableName} WHERE ${quoteSqlIdentifier(state.sqlConfig.columns.trim())} = ${whereValue};`;
                                     }).join('\n');
                                     break;
                             }
                         }
 
+                        result = applySqlOutputOptions(result);
                         state.sqlResult = result;
                         utils.copyToClipboard(result);
                     } catch (err) {
-                        ElementPlus.ElMessage.error(err.message);
+                        notify(err.message, 'error');
                     }
                 };
-
-                const updateState = reactive({
-                    showUpdateDialog: false,
-                    newVersion: '',
-                    updateLog: '',
-                    updateDate: '',
-                    checking: false
-                });
 
                 const compareVersion = (v1, v2) => {
                     const parts1 = v1.split('.').map(Number);
@@ -744,6 +1605,7 @@
                 };
 
                 const checkUpdate = async (silent = true) => {
+                    
                     try {
                         updateState.checking = true;
                         const res = await fetch(VERSION_URL + '?t=' + Date.now());
@@ -756,11 +1618,11 @@
                             updateState.updateDate = data.date;
                             updateState.showUpdateDialog = true;
                         } else if (!silent) {
-                            ElementPlus.ElMessage.success('当前已是最新版本 v' + CURRENT_VERSION);
+                            notify('当前已是最新版本 v' + CURRENT_VERSION, 'success');
                         }
                     } catch (err) {
                         if (!silent) {
-                            ElementPlus.ElMessage.warning('检查更新失败，请检查网络连接');
+                            notify('检查更新失败，请检查网络连接', 'warning');
                         }
                     } finally {
                         updateState.checking = false;
@@ -769,7 +1631,7 @@
 
                 const downloadUpdate = async () => {
                     try {
-                        ElementPlus.ElMessage.info('正在下载最新版本...');
+                        notify('正在下载最新版本...', 'info');
                         const res = await fetch(DOWNLOAD_URL + '?t=' + Date.now());
                         if (!res.ok) throw new Error('下载失败');
                         const content = await res.text();
@@ -785,9 +1647,9 @@
                         URL.revokeObjectURL(url);
 
                         updateState.showUpdateDialog = false;
-                        ElementPlus.ElMessage.success('下载完成！请用新文件替换当前文件');
+                        notify('下载完成！请用新文件替换当前文件', 'success');
                     } catch (err) {
-                        ElementPlus.ElMessage.error('下载失败，请手动前往 GitHub 下载');
+                        notify('下载失败，请手动前往 GitHub 下载', 'error');
                     }
                 };
 
@@ -798,14 +1660,22 @@
                 return {
                     ...toRefs(state),
                     ...toRefs(updateState),
+                    ...toRefs(toastState),
                     currentVersion: CURRENT_VERSION,
+                    toastClass,
                     handleInput1,
                     handleInput2,
                     handleSqlInput,
                     handleTransform,
                     handleCalculate,
                     generateSQL,
+                    getSqlStatementCount,
+                    getSqlLineCount,
+                    copySqlResult,
+                    clearSqlResult,
+                    downloadSqlResult,
                     handleExcelUpload,
+                    handleExcelDrop,
                     clearExcelData,
                     selectAllColumns,
                     switchSheet,
@@ -816,359 +1686,8 @@
             }
         });
 
-        app.use(ElementPlus);
         app.mount("#app");
     </script>
-
-    <style>
-        html,
-        body,
-        #app {
-            height: 100%;
-            padding: 0;
-            margin: 0;
-            background-image: url('https://api.dujin.org/bing/1920.php');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-
-        .el-row {
-            margin: 0 !important;
-            padding: 20px;
-        }
-
-        .box-card {
-            backdrop-filter: blur(10px);
-            background-color: rgba(255, 255, 255, 0.8);
-            border: none;
-            border-radius: 15px;
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .input {
-            margin-top: 15px;
-        }
-
-        .result-box {
-            margin: 15px 0;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 8px;
-            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-        }
-
-        .result-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .result-content {
-            word-break: break-all;
-            white-space: pre-wrap;
-        }
-
-        .sql-result {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .sql-content {
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.6;
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 4px;
-        }
-
-        .button-group {
-            margin-top: 15px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        /* Excel 导入相关样式 */
-        .excel-import-section {
-            margin-bottom: 20px;
-        }
-
-        .upload-content {
-            padding: 30px;
-            text-align: center;
-        }
-
-        .upload-text {
-            font-size: 16px;
-            margin-top: 10px;
-            color: #409EFF;
-        }
-
-        .upload-hint {
-            font-size: 12px;
-            color: #909399;
-            margin-top: 5px;
-        }
-
-        .excel-preview {
-            margin: 20px 0;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 10px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #409EFF;
-        }
-
-        .preview-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #409EFF;
-        }
-
-        .sheet-tabs {
-            margin: 15px 0;
-            padding: 15px;
-            background: rgba(230, 244, 255, 0.8);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .sheet-tabs-label {
-            font-weight: bold;
-            color: #409EFF;
-            white-space: nowrap;
-        }
-
-        .field-selector {
-            margin: 15px 0;
-            padding: 15px;
-            background: rgba(240, 248, 255, 0.8);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .selector-label {
-            font-weight: bold;
-            color: #333;
-            margin-right: 10px;
-        }
-
-        .table-wrapper {
-            margin-top: 15px;
-        }
-
-        .table-hint {
-            text-align: center;
-            padding: 10px;
-            color: #909399;
-            font-size: 13px;
-            background: rgba(255, 250, 205, 0.3);
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-
-        .manual-input-section {
-            margin-top: 20px;
-        }
-
-        .section-divider {
-            text-align: center;
-            margin: 20px 0;
-            position: relative;
-        }
-
-        .section-divider::before,
-        .section-divider::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            width: 45%;
-            height: 1px;
-            background: linear-gradient(to right, transparent, #dcdfe6, transparent);
-        }
-
-        .section-divider::before {
-            left: 0;
-        }
-
-        .section-divider::after {
-            right: 0;
-        }
-
-        .section-divider span {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 0 15px;
-            color: #909399;
-            font-size: 14px;
-        }
-
-        .btn {
-            border: none;
-            position: relative;
-            width: 200px;
-            height: 73px;
-            padding: 0;
-            z-index: 2;
-            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
-            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='868' width='2500' viewBox='0 0 726 252.17'%3E%3Cpath d='M483.92 0S481.38 24.71 466 40.11c-11.74 11.74-24.09 12.66-40.26 15.07-9.42 1.41-29.7 3.77-34.81-.79-2.37-2.11-3-21-3.22-27.62-.21-6.92-1.36-16.52-2.82-18-.75 3.06-2.49 11.53-3.09 13.61S378.49 34.3 378 36a85.13 85.13 0 0 0-30.09 0c-.46-1.67-3.17-11.48-3.77-13.56s-2.34-10.55-3.09-13.61c-1.45 1.45-2.61 11.05-2.82 18-.21 6.67-.84 25.51-3.22 27.62-5.11 4.56-25.38 2.2-34.8.79-16.16-2.47-28.51-3.39-40.21-15.13C244.57 24.71 242 0 242 0H0s69.52 22.74 97.52 68.59c16.56 27.11 14.14 58.49 9.92 74.73C170 140 221.46 140 273 158.57c69.23 24.93 83.2 76.19 90 93.6 6.77-17.41 20.75-68.67 90-93.6 51.54-18.56 103-18.59 165.56-15.25-4.21-16.24-6.63-47.62 9.93-74.73C656.43 22.74 726 0 726 0z'/%3E%3C/svg%3E") no-repeat 50% 50%;
-            -webkit-mask-size: 100%;
-            mask-size: 100%;
-            cursor: pointer;
-            background-color: transparent;
-            transform: translateY(8px)
-        }
-
-        .btn:after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            box-shadow: 0px 0 0 0 white;
-            transition: all 2s ease;
-        }
-
-        .btn:hover:after {
-            box-shadow: 0px -13px 56px 12px #ffffffa6;
-        }
-
-        .btn span {
-            position: absolute;
-            width: 100%;
-            font-size: 15px;
-            font-weight: 100;
-            left: 50%;
-            top: 39%;
-            letter-spacing: 3px;
-            text-align: center;
-            transform: translate(-50%, -50%);
-            color: black;
-            transition: all 2s ease;
-        }
-
-        .btn:hover span {
-            color: white;
-        }
-
-        .btn:before {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 100%;
-            background-color: black;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            transition: all 1s ease;
-        }
-
-        .btn:hover:before {
-            width: 100%;
-        }
-
-        .version-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 32px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 12px;
-            z-index: 999;
-        }
-
-        .update-dialog-content {
-            padding: 10px 0;
-        }
-
-        .update-version-info {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .update-version-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .update-label {
-            color: #606266;
-            font-size: 14px;
-        }
-
-        .update-arrow {
-            font-size: 20px;
-            color: #409eff;
-            font-weight: bold;
-        }
-
-        .update-log {
-            background: #f5f7fa;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 12px;
-        }
-
-        .update-log-title {
-            font-weight: bold;
-            color: #303133;
-            margin-bottom: 6px;
-            font-size: 14px;
-        }
-
-        .update-log-text {
-            color: #606266;
-            font-size: 13px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
-
-        .update-date {
-            text-align: right;
-            color: #909399;
-            font-size: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .el-col {
-                width: 100% !important;
-                margin-bottom: 20px;
-            }
-
-            .btn {
-                width: 150px;
-                height: 60px;
-            }
-        }
-    </style>
+</body>
 
 </html>
