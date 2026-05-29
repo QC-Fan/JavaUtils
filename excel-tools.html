@@ -37,6 +37,10 @@
             background: #000;
         }
 
+        html.theme-light {
+            background: #f5f5f5;
+        }
+
         body {
             min-height: 100vh;
              background-image: url('https://api.dujin.org/bing/1920.php');
@@ -53,6 +57,12 @@
             background:
                 radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.12), transparent 32rem),
                 linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.55));
+        }
+
+        html.theme-light body::before {
+            background:
+                radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.6), transparent 32rem),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.74));
         }
 
         ::selection {
@@ -362,6 +372,183 @@
             border-color: #333 !important;
         }
 
+        .theme-light {
+            color: #111;
+        }
+
+        .theme-light::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.78)),
+                radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.55), transparent 28rem);
+        }
+
+        .theme-light .glass-panel {
+            border-color: rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.84);
+            backdrop-filter: blur(18px);
+        }
+
+        .theme-light .control,
+        .theme-light .select-control,
+        .theme-light .textarea-control {
+            border-color: rgba(0, 0, 0, 0.14);
+            background: rgba(255, 255, 255, 0.86);
+            color: #111;
+        }
+
+        .theme-light .control::placeholder,
+        .theme-light .textarea-control::placeholder {
+            color: #777;
+        }
+
+        .theme-light .control:focus,
+        .theme-light .select-control:focus,
+        .theme-light .textarea-control:focus {
+            border-color: #111;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .theme-light .select-control option {
+            background: #fff;
+            color: #111;
+        }
+
+        .theme-light .btn {
+            border-color: rgba(0, 0, 0, 0.14);
+            background: rgba(255, 255, 255, 0.82);
+            color: #111;
+        }
+
+        .theme-light .btn:hover {
+            border-color: rgba(0, 0, 0, 0.28);
+            background: #fff;
+        }
+
+        .theme-light .btn-primary {
+            border-color: #111;
+            background: #111;
+            color: #fff;
+        }
+
+        .theme-light .btn-primary:hover {
+            border-color: #000;
+            background: #000;
+            color: #fff;
+        }
+
+        .theme-light .chip,
+        .theme-light .checkbox-tile,
+        .theme-light .radio-tile,
+        .theme-light .tabs-button {
+            border-color: rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.74);
+            color: #333;
+        }
+
+        .theme-light .checkbox-tile:hover,
+        .theme-light .radio-tile:hover,
+        .theme-light .tabs-button:hover {
+            border-color: rgba(0, 0, 0, 0.26);
+            background: #fff;
+            color: #111;
+        }
+
+        .theme-light .checkbox-tile input,
+        .theme-light .radio-tile input {
+            accent-color: #111;
+        }
+
+        .theme-light .tabs-button.active {
+            border-color: #111;
+            background: #111;
+            color: #fff;
+        }
+
+        .theme-light .code-block {
+            border-color: rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.84);
+            color: #111;
+        }
+
+        .theme-light .table-scroll {
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        .theme-light th {
+            background: rgba(245, 245, 245, 0.96);
+            color: #111;
+        }
+
+        .theme-light td {
+            border-bottom-color: rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.7);
+            color: #333;
+        }
+
+        .theme-light tbody tr:hover td {
+            background: #fff;
+        }
+
+        .theme-light header.sticky {
+            border-color: rgba(0, 0, 0, 0.12) !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+        }
+
+        .theme-light .bg-white\/5,
+        .theme-light .bg-slate-950\/30,
+        .theme-light .bg-teal-300\/10,
+        .theme-light .bg-teal-300\/15,
+        .theme-light .bg-teal-200\/10,
+        .theme-light .hover\:bg-teal-300\/10:hover {
+            background-color: rgba(255, 255, 255, 0.64) !important;
+        }
+
+        .theme-light .border-white\/10,
+        .theme-light .border-white\/15,
+        .theme-light .border-dashed,
+        .theme-light .border-teal-300\/30,
+        .theme-light .border-teal-200\/25,
+        .theme-light .hover\:border-teal-300\/40:hover {
+            border-color: rgba(0, 0, 0, 0.12) !important;
+        }
+
+        .theme-light .text-white,
+        .theme-light .text-slate-200,
+        .theme-light .text-teal-200\/80,
+        .theme-light .text-sky-200\/80,
+        .theme-light .text-indigo-200\/80,
+        .theme-light .text-fuchsia-200\/80,
+        .theme-light .text-teal-200,
+        .theme-light .text-teal-100 {
+            color: #111 !important;
+        }
+
+        .theme-light .text-slate-300,
+        .theme-light .text-slate-400,
+        .theme-light .text-slate-500 {
+            color: #525252 !important;
+        }
+
+        .theme-light .modal-backdrop {
+            background: rgba(255, 255, 255, 0.68);
+        }
+
+        .theme-light * {
+            scrollbar-color: #9ca3af transparent;
+        }
+
+        .theme-light *::-webkit-scrollbar-thumb {
+            background: #a3a3a3;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
         @media (max-width: 640px) {
             .textarea-control {
                 min-height: 112px;
@@ -379,7 +566,7 @@
 </head>
 
 <body>
-    <div id="app" v-cloak class="min-h-screen">
+    <div id="app" v-cloak class="min-h-screen" :class="themeMode === 'light' ? 'theme-light' : 'theme-dark'">
         <header
             class="sticky top-0 z-30 w-full border-b border-white/10 bg-slate-950/60 px-4 py-4 backdrop-blur-2xl sm:px-6 lg:px-8">
             <div class="mx-auto w-full max-w-[1440px]">
@@ -406,6 +593,9 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
                         <span class="chip">本地 file:// 可运行</span>
+                        <button class="btn" @click="toggleTheme" :title="themeMode === 'light' ? '切换黑色风格' : '切换亮色风格'">
+                            {{themeMode === 'light' ? '亮色模式' : '黑色模式'}}
+                        </button>
                         <button class="btn btn-primary" @click="checkUpdate(false)" :disabled="checking">
                             <svg class="h-4 w-4" :class="{'animate-spin': checking}" viewBox="0 0 24 24" fill="none"
                                 aria-hidden="true">
@@ -877,7 +1067,7 @@
     <script>
         const { createApp, reactive, toRefs, onMounted } = Vue;
 
-        const CURRENT_VERSION = '2.0.0';
+        const CURRENT_VERSION = '2.0.1';
         const GITHUB_REPO = 'QC-Fan/JavaUtils';
         const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/version.json`;
         const DOWNLOAD_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/excel-tools.html`;
@@ -955,6 +1145,7 @@
                     qzValue: '',
                     result1: '',
                     result2: '',
+                    themeMode: localStorage.getItem('javautils-theme') || 'dark',
                     transformPanelTab: 'quick',
                     transformOptions: {
                         delimiter: 'commaSpace',
@@ -1022,6 +1213,17 @@
 
                 const handleSqlInput = () => {
                     state.sqlResult = '';
+                };
+
+                const applyTheme = () => {
+                    document.documentElement.classList.toggle('theme-light', state.themeMode === 'light');
+                    document.documentElement.classList.toggle('theme-dark', state.themeMode !== 'light');
+                };
+
+                const toggleTheme = () => {
+                    state.themeMode = state.themeMode === 'light' ? 'dark' : 'light';
+                    localStorage.setItem('javautils-theme', state.themeMode);
+                    applyTheme();
                 };
 
                 const readExcelFile = (rawFile) => {
@@ -1654,6 +1856,7 @@
                 };
 
                 onMounted(() => {
+                    applyTheme();
                     checkUpdate(true);
                 });
 
@@ -1666,6 +1869,7 @@
                     handleInput1,
                     handleInput2,
                     handleSqlInput,
+                    toggleTheme,
                     handleTransform,
                     handleCalculate,
                     generateSQL,

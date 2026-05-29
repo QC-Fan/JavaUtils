@@ -1,6 +1,16 @@
 # JavaUtils 数据转换工具
 
+![Version](https://img.shields.io/badge/version-v2.0.0-black)
+![Runtime](https://img.shields.io/badge/runtime-file%3A%2F%2F-lightgrey)
+![Build](https://img.shields.io/badge/build-none-white)
+
 一个本地可直接运行的数据处理工具页面，面向 Java 开发、SQL 批处理和日常 Excel 数据整理场景。
+
+## 当前版本
+
+- 版本号：`v2.0.0`
+- 发布日期：`2026-05-29`
+- 更新内容：整个 UI 界面重构，新增 Vercel 风格工作台、主题切换、SQL 输出增强等能力。
 
 ## 页面文件
 
@@ -71,7 +81,7 @@ excel-tools原来.html
 
 ## 新版界面
 
-使用 Vercel 风格的深色极简界面：
+`v2.0.0` 使用 Vercel 风格的深色极简界面：
 
 - 顶部全宽置顶 Header
 - Bing 背景图
@@ -80,6 +90,18 @@ excel-tools原来.html
 - 常规转换 / 选项转换 Tab
 - 优化后的输入框与滚动条
 - 响应式布局，支持 PC、平板和手机
+
+## 更新记录
+
+### v2.0.0
+
+- 重构为 Vercel 风格工作台界面
+- 保留原有 Excel、转换、计算、SQL 生成逻辑
+- 新增黑色 / 亮色主题切换
+- 新增常规转换 / 选项转换 Tab
+- 新增 SQL 输出选项、统计、复制、清空、下载 `.sql`
+- 优化输入框、表格、代码区和滚动条样式
+- 保留原始版本页面 `excel-tools原来.html`
 
 ## 注意事项
 
