@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 
 <head>
@@ -12,6 +12,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.13/vue.global.prod.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -803,7 +804,7 @@
                         <label
                             class="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 px-5 py-8 text-center transition hover:border-teal-300/40 hover:bg-teal-300/10"
                             @dragover.prevent @drop.prevent="handleExcelDrop">
-                            <input class="hidden" type="file" accept=".xlsx,.xls" @change="handleExcelUpload">
+                            <input class="hidden" type="file" accept=".xlsx,.xls,.csv,.sql,.db,.sqlite,.sqlite3" @change="handleExcelUpload">
                             <span
                                 class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-teal-200/25 bg-teal-200/10 text-teal-100 transition group-hover:scale-105">
                                 <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1067,7 +1068,7 @@
     <script>
         const { createApp, reactive, toRefs, onMounted } = Vue;
 
-        const CURRENT_VERSION = '2.0.1';
+        const CURRENT_VERSION = '2.0.2';
         const GITHUB_REPO = 'QC-Fan/JavaUtils';
         const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/version.json`;
         const DOWNLOAD_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/excel-tools.html`;
@@ -1183,6 +1184,9 @@
                     excelColumns: [],
                     selectedColumns: [],
                     excelWorkbook: null,
+                    importedTables: {},
+                    database: null,
+                    dataSourceLabel: 'Excel',
                     sheetNames: [],
                     currentSheet: ''
                 });
@@ -1226,11 +1230,364 @@
                     applyTheme();
                 };
 
+                const getFileExtension = (fileName) => {
+                    const name = String(fileName || '').toLowerCase();
+                    const index = name.lastIndexOf('.');
+                    return index >= 0 ? name.slice(index + 1) : '';
+                };
+
+                const resetImportedData = () => {
+                    if (state.database && typeof state.database.close === 'function') {
+                        state.database.close();
+                    }
+                    state.excelData = [];
+                    state.excelColumns = [];
+                    state.selectedColumns = [];
+                    state.excelWorkbook = null;
+                    state.importedTables = {};
+                    state.database = null;
+                    state.sheetNames = [];
+                    state.currentSheet = '';
+                    state.sqlConfig.columns = '';
+                    state.sqlResult = '';
+                };
+
+                const applyTabularData = (rows, columns, name, label) => {
+                    const validColumns = columns.map((column, idx) => {
+                        const value = column === undefined || column === null ? '' : String(column).trim();
+                        return value || `Column_${idx + 1}`;
+                    });
+                    const jsonData = rows.map(row => {
+                        const obj = {};
+                        validColumns.forEach((column, idx) => {
+                            obj[column] = row[idx] !== undefined && row[idx] !== null ? row[idx] : '';
+                        });
+                        return obj;
+                    });
+
+                    state.excelData = jsonData;
+                    state.excelColumns = validColumns;
+                    state.selectedColumns = [...validColumns];
+                    state.currentSheet = name || '';
+                    state.dataSourceLabel = label || 'Excel';
+                    state.sqlConfig.columns = validColumns.join(', ');
+                    state.sqlResult = '';
+                };
+
+                const applyArrayTable = (rawData, name, label) => {
+                    if (!rawData || rawData.length === 0) {
+                        state.excelData = [];
+                        state.excelColumns = [];
+                        state.selectedColumns = [];
+                        notify('导入文件为空或没有可读取的数据', 'warning');
+                        return;
+                    }
+
+                    const headers = rawData[0] || [];
+                    const dataRows = rawData.slice(1);
+                    applyTabularData(dataRows, headers, name, label);
+                };
+
+                const splitCsvLike = (text) => {
+                    if (!text) return [];
+                    const workbook = XLSX.read(text, { type: 'string' });
+                    const firstSheet = workbook.SheetNames[0];
+                    if (!firstSheet) return [];
+                    return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {
+                        header: 1,
+                        defval: '',
+                        raw: false
+                    });
+                };
+
+                const splitSqlStatements = (text) => {
+                    const statements = [];
+                    let current = '';
+                    let quote = '';
+                    let lineComment = false;
+                    let blockComment = false;
+
+                    for (let i = 0; i < text.length; i++) {
+                        const char = text[i];
+                        const next = text[i + 1];
+
+                        if (lineComment) {
+                            if (char === '\n') lineComment = false;
+                            continue;
+                        }
+                        if (blockComment) {
+                            if (char === '*' && next === '/') {
+                                blockComment = false;
+                                i++;
+                            }
+                            continue;
+                        }
+                        if (!quote && char === '-' && next === '-') {
+                            lineComment = true;
+                            i++;
+                            continue;
+                        }
+                        if (!quote && char === '/' && next === '*') {
+                            blockComment = true;
+                            i++;
+                            continue;
+                        }
+                        if ((char === '\'' || char === '"') && text[i - 1] !== '\\') {
+                            quote = quote === char ? '' : (quote || char);
+                        }
+                        if (char === ';' && !quote) {
+                            if (current.trim()) statements.push(current.trim());
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+
+                    if (current.trim()) statements.push(current.trim());
+                    return statements;
+                };
+
+                const splitSqlList = (value) => {
+                    const items = [];
+                    let current = '';
+                    let quote = '';
+                    let depth = 0;
+
+                    for (let i = 0; i < value.length; i++) {
+                        const char = value[i];
+                        const next = value[i + 1];
+
+                        if (quote) {
+                            current += char;
+                            if (char === quote) {
+                                if (next === quote) {
+                                    current += next;
+                                    i++;
+                                } else {
+                                    quote = '';
+                                }
+                            }
+                            continue;
+                        }
+
+                        if (char === '\'' || char === '"') {
+                            quote = char;
+                            current += char;
+                            continue;
+                        }
+                        if (char === '(') depth++;
+                        if (char === ')') depth--;
+
+                        if (char === ',' && depth === 0) {
+                            items.push(current.trim());
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+
+                    if (current.trim()) items.push(current.trim());
+                    return items;
+                };
+
+                const parseSqlValue = (value) => {
+                    const trimmed = String(value || '').trim();
+                    if (/^null$/i.test(trimmed)) return '';
+                    if (/^'.*'$/.test(trimmed) || /^".*"$/.test(trimmed)) {
+                        return trimmed.slice(1, -1).replace(/''/g, "'").replace(/""/g, '"');
+                    }
+                    return trimmed;
+                };
+
+                const parseSqlDump = (text) => {
+                    const tables = {};
+                    splitSqlStatements(text).forEach(statement => {
+                        const match = statement.match(/insert\s+(?:or\s+\w+\s+)?into\s+(.+?)\s*(?:\(([\s\S]*?)\))?\s*values\s*([\s\S]*)$/i);
+                        if (!match) return;
+
+                        const tableName = match[1].trim().split('.').pop().replace(/^[`"\[]|[`"\]]$/g, '').trim();
+                        const columns = match[2]
+                            ? splitSqlList(match[2]).map(item => item.replace(/^[`"\[]|[`"\]]$/g, '').trim())
+                            : [];
+                        const valuesText = match[3].trim();
+                        const groups = [];
+                        let current = '';
+                        let quote = '';
+                        let depth = 0;
+
+                        for (let i = 0; i < valuesText.length; i++) {
+                            const char = valuesText[i];
+                            const next = valuesText[i + 1];
+                            if (quote) {
+                                current += char;
+                                if (char === quote) {
+                                    if (next === quote) {
+                                        current += next;
+                                        i++;
+                                    } else {
+                                        quote = '';
+                                    }
+                                }
+                                continue;
+                            }
+                            if (char === '\'' || char === '"') {
+                                quote = char;
+                                current += char;
+                                continue;
+                            }
+                            if (char === '(') {
+                                if (depth > 0) current += char;
+                                depth++;
+                                continue;
+                            }
+                            if (char === ')') {
+                                depth--;
+                                if (depth === 0) {
+                                    groups.push(current);
+                                    current = '';
+                                } else {
+                                    current += char;
+                                }
+                                continue;
+                            }
+                            if (depth > 0) current += char;
+                        }
+
+                        const rows = groups.map(group => splitSqlList(group).map(parseSqlValue));
+                        if (rows.length === 0) return;
+                        const columnNames = columns.length > 0
+                            ? columns
+                            : rows[0].map((_, idx) => `Column_${idx + 1}`);
+
+                        if (!tables[tableName]) {
+                            tables[tableName] = { columns: columnNames, rows: [] };
+                        }
+                        tables[tableName].rows.push(...rows);
+                    });
+                    return tables;
+                };
+
+                const loadImportedTable = (tableName) => {
+                    const table = state.importedTables[tableName];
+                    if (!table) return;
+                    applyTabularData(table.rows, table.columns, tableName, state.dataSourceLabel);
+                    if (!state.sqlConfig.tableName) {
+                        state.sqlConfig.tableName = tableName;
+                    }
+                    notify(`已加载 "${tableName}"，共 ${table.rows.length} 行数据`, 'success');
+                };
+
+                const readSqlDumpFile = (rawFile) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            resetImportedData();
+                            const tables = parseSqlDump(e.target.result || '');
+                            const names = Object.keys(tables);
+                            if (names.length === 0) {
+                                notify('未在 SQL 文件中识别到 INSERT 数据', 'warning');
+                                return;
+                            }
+                            state.importedTables = tables;
+                            state.sheetNames = names;
+                            state.dataSourceLabel = 'SQL';
+                            state.sqlConfig.tableName = names[0];
+                            loadImportedTable(names[0]);
+                        } catch (err) {
+                            console.error('SQL dump parse failed:', err);
+                            notify('SQL 文件解析失败，请检查 INSERT 语句格式', 'error');
+                        }
+                    };
+                    reader.readAsText(rawFile, 'utf-8');
+                };
+
+                const readCsvFile = (rawFile) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            resetImportedData();
+                            const rawData = splitCsvLike(e.target.result || '');
+                            state.sheetNames = [rawFile.name];
+                            state.dataSourceLabel = 'CSV';
+                            applyArrayTable(rawData, rawFile.name, 'CSV');
+                            notify(`成功导入 CSV 文件，共 ${state.excelData.length} 行数据`, 'success');
+                        } catch (err) {
+                            console.error('CSV parse failed:', err);
+                            notify('CSV 文件解析失败，请检查文件格式', 'error');
+                        }
+                    };
+                    reader.readAsText(rawFile, 'utf-8');
+                };
+
+                const readSqliteFile = (rawFile) => {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            resetImportedData();
+                            if (typeof initSqlJs !== 'function') {
+                                notify('SQLite 解析库加载失败，请检查网络后重试', 'error');
+                                return;
+                            }
+                            const SQL = await initSqlJs({
+                                locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+                            });
+                            const database = new SQL.Database(new Uint8Array(e.target.result));
+                            const tablesResult = database.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
+                            const tableNames = tablesResult[0] ? tablesResult[0].values.map(row => row[0]) : [];
+
+                            if (tableNames.length === 0) {
+                                notify('数据库文件中没有可读取的数据表', 'warning');
+                                database.close();
+                                return;
+                            }
+
+                            const tables = {};
+                            tableNames.forEach(tableName => {
+                                const result = database.exec(`SELECT * FROM "${String(tableName).replace(/"/g, '""')}"`);
+                                const first = result[0] || { columns: [], values: [] };
+                                tables[tableName] = {
+                                    columns: first.columns,
+                                    rows: first.values
+                                };
+                            });
+
+                            state.database = database;
+                            state.importedTables = tables;
+                            state.sheetNames = tableNames;
+                            state.dataSourceLabel = 'SQLite';
+                            state.sqlConfig.tableName = tableNames[0];
+                            loadImportedTable(tableNames[0]);
+                        } catch (err) {
+                            console.error('SQLite parse failed:', err);
+                            notify('数据库文件解析失败，目前支持 SQLite .db/.sqlite 文件', 'error');
+                        }
+                    };
+                    reader.readAsArrayBuffer(rawFile);
+                };
+
+                const readDataFile = (rawFile) => {
+                    if (!rawFile) return;
+                    const ext = getFileExtension(rawFile.name);
+                    if (['xlsx', 'xls'].includes(ext)) {
+                        readExcelFile(rawFile);
+                    } else if (ext === 'csv') {
+                        readCsvFile(rawFile);
+                    } else if (ext === 'sql') {
+                        readSqlDumpFile(rawFile);
+                    } else if (['db', 'sqlite', 'sqlite3'].includes(ext)) {
+                        readSqliteFile(rawFile);
+                    } else {
+                        notify('暂不支持该文件格式，请上传 Excel、CSV、SQL 或 SQLite 数据库文件', 'warning');
+                    }
+                };
+
                 const readExcelFile = (rawFile) => {
                     if (!rawFile) return;
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         try {
+                            resetImportedData();
+                            state.dataSourceLabel = 'Excel';
                             const data = new Uint8Array(e.target.result);
                             const workbook = XLSX.read(data, { type: 'array' });
                             if (workbook.SheetNames.length === 0) {
@@ -1259,7 +1616,7 @@
                         : file && file.target && file.target.files
                             ? file.target.files[0]
                             : file;
-                    readExcelFile(rawFile);
+                    readDataFile(rawFile);
                     if (file && file.target) {
                         file.target.value = '';
                     }
@@ -1269,7 +1626,7 @@
                     const rawFile = event.dataTransfer && event.dataTransfer.files
                         ? event.dataTransfer.files[0]
                         : null;
-                    readExcelFile(rawFile);
+                    readDataFile(rawFile);
                 };
 
                 const loadSheetData = (sheetName) => {
@@ -1313,6 +1670,7 @@
                             state.excelData = [];
                             state.excelColumns = validHeaders;
                             state.selectedColumns = [...validHeaders];
+                            state.sqlConfig.columns = validHeaders.join(', ');
                             return;
                         }
 
@@ -1320,6 +1678,8 @@
                         state.excelColumns = validHeaders;
                         state.selectedColumns = [...validHeaders];
                         state.currentSheet = sheetName;
+                        state.dataSourceLabel = 'Excel';
+                        state.sqlConfig.columns = validHeaders.join(', ');
 
                         notify(`已加载工作表 "${sheetName}"，共 ${jsonData.length} 行数据`, 'success');
                     } catch (err) {
@@ -1329,18 +1689,15 @@
                 };
 
                 const switchSheet = (sheetName) => {
-                    loadSheetData(sheetName);
+                    if (state.excelWorkbook) {
+                        loadSheetData(sheetName);
+                    } else {
+                        loadImportedTable(sheetName);
+                    }
                 };
 
                 const clearExcelData = () => {
-                    state.excelData = [];
-                    state.excelColumns = [];
-                    state.selectedColumns = [];
-                    state.excelWorkbook = null;
-                    state.sheetNames = [];
-                    state.currentSheet = '';
-                    state.sqlConfig.columns = '';
-                    state.sqlResult = '';
+                    resetImportedData();
                     notify('已清空数据', 'success');
                 };
 
