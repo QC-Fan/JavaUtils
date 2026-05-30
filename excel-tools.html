@@ -207,6 +207,51 @@
             font-size: 12px;
         }
 
+        .anchor-section {
+            scroll-margin-top: 170px;
+        }
+
+        .side-nav-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            padding: 10px 12px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+        }
+
+        .side-nav-panel {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(18px);
+        }
+
+        .side-nav-link:hover {
+            border-color: #444;
+            background: #171717;
+            color: #fff;
+        }
+
+        .side-nav-link.active {
+            border-color: #fff;
+            background: #fff;
+            color: #000 !important;
+        }
+
+        .side-nav-dot {
+            width: 6px;
+            height: 6px;
+            flex: none;
+            border-radius: 999px;
+            background: currentColor;
+            opacity: 0.55;
+        }
+
         .checkbox-tile,
         .radio-tile {
             display: inline-flex;
@@ -443,6 +488,27 @@
             color: #fff;
         }
 
+        .theme-light .side-nav-panel {
+            border-color: rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.86);
+        }
+
+        .theme-light .side-nav-link {
+            color: #000;
+        }
+
+        .theme-light .side-nav-link:hover {
+            border-color: rgba(0, 0, 0, 0.18);
+            background: rgba(0, 0, 0, 0.04);
+            color: #111;
+        }
+
+        .theme-light .side-nav-link.active {
+            border-color: #111;
+            background: #111;
+            color: #fff !important;
+        }
+
         .theme-light .chip,
         .theme-light .checkbox-tile,
         .theme-light .radio-tile,
@@ -613,10 +679,33 @@
         </header>
 
         <main class="relative mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 pb-10 pt-5 sm:px-6 lg:px-8">
+            <nav class="flex gap-2 overflow-x-auto pb-2 lg:hidden" aria-label="页面导航">
+                <a v-for="item in navItems" :key="item.id"
+                    class="side-nav-link shrink-0 whitespace-nowrap"
+                    :class="{ active: activeSection === item.id }"
+                    :href="'#' + item.id"
+                    @click="setActiveSection(item.id)">
+                    <span>{{item.label}}</span>
+                </a>
+            </nav>
 
-            <section class="flex flex-1 flex-col gap-5 py-5">
+            <div class="grid flex-1 gap-5 py-5 lg:grid-cols-[190px_minmax(0,1fr)]">
+                <aside class="hidden lg:block">
+                    <nav class="side-nav-panel sticky top-[132px] rounded-2xl p-2" aria-label="页面导航">
+                        <a v-for="item in navItems" :key="item.id"
+                            class="side-nav-link"
+                            :class="{ active: activeSection === item.id }"
+                            :href="'#' + item.id"
+                            @click="setActiveSection(item.id)">
+                            <span>{{item.label}}</span>
+                            <span class="side-nav-dot"></span>
+                        </a>
+                    </nav>
+                </aside>
+
+                <section class="flex flex-1 flex-col gap-5">
                 <aside class="grid gap-5 lg:grid-cols-2">
-                    <section class="glass-panel rounded-2xl p-5">
+                    <section id="transform-section" class="anchor-section glass-panel rounded-2xl p-5">
                         <div class="mb-4 flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-teal-200/80">Transform</p>
@@ -770,7 +859,7 @@
                         </transition>
                     </section>
 
-                    <section class="glass-panel rounded-2xl p-5">
+                    <section id="calculate-section" class="anchor-section glass-panel rounded-2xl p-5">
                         <div class="mb-5">
                             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-200/80">Calculate</p>
                             <h2 class="mt-2 text-lg font-semibold text-white">数值计算</h2>
@@ -795,7 +884,82 @@
                         </transition>
                     </section>
 
-                    <section class="glass-panel rounded-2xl p-5 lg:col-span-2">
+                    <section id="cron-section" class="anchor-section glass-panel rounded-2xl p-5 lg:col-span-2">
+                        <div class="mb-5 flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-fuchsia-200/80">Cron</p>
+                                <h2 class="mt-2 text-lg font-semibold text-white">定时器生成器</h2>
+                            </div>
+                            <span class="chip">Spring 6 段</span>
+                        </div>
+
+                        <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+                            <div>
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <label class="grid gap-2 sm:col-span-2">
+                                        <span class="text-sm font-medium text-slate-300">常用场景</span>
+                                        <select v-model="cronConfig.preset" class="select-control" @change="applyCronPreset">
+                                            <option value="everyMinute">每分钟</option>
+                                            <option value="every5Minutes">每 5 分钟</option>
+                                            <option value="hourly">每小时整点</option>
+                                            <option value="daily">每天 9 点</option>
+                                            <option value="weekday">工作日 9 点</option>
+                                            <option value="weekly">每周一 9 点</option>
+                                            <option value="monthly">每月 1 日 9 点</option>
+                                            <option value="custom">自定义</option>
+                                        </select>
+                                    </label>
+                                    <label class="grid gap-2">
+                                        <span class="text-xs font-medium text-slate-400">秒</span>
+                                        <input v-model="cronConfig.second" class="control" placeholder="0">
+                                    </label>
+                                    <label class="grid gap-2">
+                                        <span class="text-xs font-medium text-slate-400">分</span>
+                                        <input v-model="cronConfig.minute" class="control" placeholder="*/5">
+                                    </label>
+                                    <label class="grid gap-2">
+                                        <span class="text-xs font-medium text-slate-400">时</span>
+                                        <input v-model="cronConfig.hour" class="control" placeholder="9">
+                                    </label>
+                                    <label class="grid gap-2">
+                                        <span class="text-xs font-medium text-slate-400">日</span>
+                                        <input v-model="cronConfig.day" class="control" placeholder="* 或 ?">
+                                    </label>
+                                    <label class="grid gap-2">
+                                        <span class="text-xs font-medium text-slate-400">月</span>
+                                        <input v-model="cronConfig.month" class="control" placeholder="*">
+                                    </label>
+                                    <label class="grid gap-2">
+                                        <span class="text-xs font-medium text-slate-400">周</span>
+                                        <input v-model="cronConfig.week" class="control" placeholder="? 或 MON-FRI">
+                                    </label>
+                                </div>
+
+                                <div class="mt-4 flex flex-wrap gap-3">
+                                    <button class="btn btn-primary" title="生成 Cron 表达式" @click="generateCron">生成 Cron</button>
+                                    <button class="btn" title="复制 Cron 表达式" @click="copyCronResult">复制</button>
+                                </div>
+                            </div>
+
+                            <transition name="fade">
+                                <div v-if="cronResult" class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                                    <div class="mb-3 flex items-center justify-between gap-3">
+                                        <h3 class="text-sm font-semibold text-white">Cron 表达式</h3>
+                                        <span class="chip">秒 分 时 日 月 周</span>
+                                    </div>
+                                    <div class="code-block break-all">{{cronResult}}</div>
+                                    <div v-if="cronPreview.length" class="mt-4 grid gap-2">
+                                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Next</div>
+                                        <div v-for="item in cronPreview" :key="item" class="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-300">
+                                            {{item}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </transition>
+                        </div>
+                    </section>
+
+                    <section id="data-section" class="anchor-section glass-panel rounded-2xl p-5 lg:col-span-2">
                         <div class="mb-5">
                             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-200/80">Excel</p>
                             <h2 class="mt-2 text-lg font-semibold text-white">数据输入与字段配置</h2>
@@ -814,15 +978,15 @@
                                         stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                                 </svg>
                             </span>
-                            <span class="text-sm font-semibold text-white">拖拽 Excel 文件到此处或点击上传</span>
-                            <span class="mt-1 text-xs text-slate-400">支持 .xlsx 和 .xls 格式</span>
+                            <span class="text-sm font-semibold text-white">拖拽 Excel / 数据文件到此处或点击上传</span>
+                            <span class="mt-1 text-xs text-slate-400">支持 .xlsx、.xls、.csv、.sql、.db、.sqlite 格式</span>
                         </label>
 
                         <transition name="fade">
                             <div v-if="excelData.length > 0" class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <h3 class="font-semibold text-white">Excel 数据预览</h3>
+                                        <h3 class="font-semibold text-white">{{dataSourceLabel}} 数据预览</h3>
                                         <p class="mt-1 text-sm text-slate-400">当前共 {{excelData.length}} 行数据</p>
                                     </div>
                                     <button class="btn btn-danger" @click="clearExcelData">清空数据</button>
@@ -933,7 +1097,7 @@
                 </aside>
 
                 <section class="flex flex-col gap-5">
-                    <section class="glass-panel rounded-2xl p-5">
+                    <section id="sql-output-section" class="anchor-section glass-panel rounded-2xl p-5">
                         <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-fuchsia-200/80">SQL
@@ -1008,7 +1172,7 @@
                     </section>
 
                 </section>
-            </section>
+            </div>
         </main>
 
         
@@ -1066,9 +1230,9 @@
     </div>
 
     <script>
-        const { createApp, reactive, toRefs, onMounted } = Vue;
+        const { createApp, reactive, toRefs, onMounted, onUnmounted } = Vue;
 
-        const CURRENT_VERSION = '2.0.2';
+        const CURRENT_VERSION = '2.0.3';
         const GITHUB_REPO = 'QC-Fan/JavaUtils';
         const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/version.json`;
         const DOWNLOAD_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/excel-tools.html`;
@@ -1146,6 +1310,7 @@
                     qzValue: '',
                     result1: '',
                     result2: '',
+                    activeSection: 'transform-section',
                     themeMode: localStorage.getItem('javautils-theme') || 'dark',
                     transformPanelTab: 'quick',
                     transformOptions: {
@@ -1170,6 +1335,17 @@
                         outputLength: 0
                     },
                     duplicateItems: [],
+                    cronConfig: {
+                        preset: 'daily',
+                        second: '0',
+                        minute: '0',
+                        hour: '9',
+                        day: '*',
+                        month: '*',
+                        week: '?'
+                    },
+                    cronResult: '',
+                    cronPreview: [],
                     sqlData: '',
                     sqlResult: '',
                     sqlConfig: {
@@ -1198,6 +1374,30 @@
                     updateDate: '',
                     checking: false
                 });
+
+                const navItems = [
+                    { id: 'transform-section', label: '列转换' },
+                    { id: 'calculate-section', label: '数值计算' },
+                    { id: 'cron-section', label: '定时器' },
+                    { id: 'data-section', label: '数据导入' },
+                    { id: 'sql-output-section', label: 'SQL 结果' }
+                ];
+
+                const setActiveSection = (id) => {
+                    state.activeSection = id;
+                };
+
+                const updateActiveSection = () => {
+                    const offset = 190;
+                    let current = navItems[0].id;
+                    navItems.forEach(item => {
+                        const el = document.getElementById(item.id);
+                        if (el && el.getBoundingClientRect().top <= offset) {
+                            current = item.id;
+                        }
+                    });
+                    state.activeSection = current;
+                };
 
                 const handleInput1 = () => {
                     state.result1 = '';
@@ -1898,6 +2098,173 @@
                     }
                 };
 
+                const cronPresets = {
+                    everyMinute: ['0', '*', '*', '*', '*', '?'],
+                    every5Minutes: ['0', '*/5', '*', '*', '*', '?'],
+                    hourly: ['0', '0', '*', '*', '*', '?'],
+                    daily: ['0', '0', '9', '*', '*', '?'],
+                    weekday: ['0', '0', '9', '?', '*', 'MON-FRI'],
+                    weekly: ['0', '0', '9', '?', '*', 'MON'],
+                    monthly: ['0', '0', '9', '1', '*', '?']
+                };
+
+                const applyCronParts = (parts) => {
+                    [
+                        state.cronConfig.second,
+                        state.cronConfig.minute,
+                        state.cronConfig.hour,
+                        state.cronConfig.day,
+                        state.cronConfig.month,
+                        state.cronConfig.week
+                    ] = parts;
+                };
+
+                const applyCronPreset = () => {
+                    const preset = cronPresets[state.cronConfig.preset];
+                    if (preset) {
+                        applyCronParts([...preset]);
+                        generateCron(false);
+                    }
+                };
+
+                const normalizeCronField = (value, fallback) => {
+                    const result = String(value || '').trim().toUpperCase();
+                    return result || fallback;
+                };
+
+                const buildCronExpression = () => {
+                    const parts = [
+                        normalizeCronField(state.cronConfig.second, '0'),
+                        normalizeCronField(state.cronConfig.minute, '*'),
+                        normalizeCronField(state.cronConfig.hour, '*'),
+                        normalizeCronField(state.cronConfig.day, '*'),
+                        normalizeCronField(state.cronConfig.month, '*'),
+                        normalizeCronField(state.cronConfig.week, '?')
+                    ];
+
+                    if (parts.some(part => /\s/.test(part))) {
+                        throw new Error('Cron 每一段不能包含空格');
+                    }
+                    if (parts[3] !== '?' && parts[5] !== '?') {
+                        throw new Error('日和周不能同时指定，请将其中一个设置为 ?');
+                    }
+                    return parts.join(' ');
+                };
+
+                const cronNameMap = {
+                    JAN: 1,
+                    FEB: 2,
+                    MAR: 3,
+                    APR: 4,
+                    MAY: 5,
+                    JUN: 6,
+                    JUL: 7,
+                    AUG: 8,
+                    SEP: 9,
+                    OCT: 10,
+                    NOV: 11,
+                    DEC: 12,
+                    SUN: 0,
+                    MON: 1,
+                    TUE: 2,
+                    WED: 3,
+                    THU: 4,
+                    FRI: 5,
+                    SAT: 6
+                };
+
+                const parseCronToken = (token) => {
+                    const upper = String(token || '').trim().toUpperCase();
+                    return Object.prototype.hasOwnProperty.call(cronNameMap, upper)
+                        ? cronNameMap[upper]
+                        : Number(upper);
+                };
+
+                const matchCronField = (field, value, min, max) => {
+                    const source = String(field || '*').trim().toUpperCase();
+                    if (source === '*' || source === '?') return true;
+
+                    return source.split(',').some(part => {
+                        if (/^\*\/\d+$/.test(part)) {
+                            const step = Number(part.slice(2));
+                            return step > 0 && (value - min) % step === 0;
+                        }
+                        if (part.includes('-')) {
+                            const [startText, endText] = part.split('-');
+                            const start = parseCronToken(startText);
+                            const end = parseCronToken(endText);
+                            return !Number.isNaN(start) && !Number.isNaN(end) && value >= start && value <= end;
+                        }
+                        const exact = parseCronToken(part);
+                        if (max === 7 && exact === 7) {
+                            return value === 0;
+                        }
+                        return !Number.isNaN(exact) && value === exact;
+                    });
+                };
+
+                const formatDateTime = (date) => {
+                    const pad = value => String(value).padStart(2, '0');
+                    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+                };
+
+                const getNextCronRuns = (expression, count = 5) => {
+                    const [second, minute, hour, day, month, week] = expression.split(' ');
+                    if (!/^\d+$/.test(second)) {
+                        return [];
+                    }
+
+                    const targetSecond = Number(second);
+                    if (targetSecond < 0 || targetSecond > 59) {
+                        return [];
+                    }
+
+                    const runs = [];
+                    const cursor = new Date();
+                    cursor.setMilliseconds(0);
+                    cursor.setSeconds(targetSecond);
+                    if (cursor <= new Date()) {
+                        cursor.setMinutes(cursor.getMinutes() + 1);
+                    }
+
+                    const maxMinutes = 525600;
+                    for (let i = 0; i < maxMinutes && runs.length < count; i++) {
+                        const candidate = new Date(cursor.getTime() + i * 60000);
+                        const jsDay = candidate.getDay();
+                        const quartzDay = jsDay === 0 ? 7 : jsDay;
+                        const matches = matchCronField(minute, candidate.getMinutes(), 0, 59)
+                            && matchCronField(hour, candidate.getHours(), 0, 23)
+                            && matchCronField(day, candidate.getDate(), 1, 31)
+                            && matchCronField(month, candidate.getMonth() + 1, 1, 12)
+                            && (matchCronField(week, jsDay, 0, 7) || matchCronField(week, quartzDay, 1, 7));
+                        if (matches) {
+                            runs.push(formatDateTime(candidate));
+                        }
+                    }
+                    return runs;
+                };
+
+                const generateCron = (shouldCopy = true) => {
+                    try {
+                        const result = buildCronExpression();
+                        state.cronResult = result;
+                        state.cronPreview = getNextCronRuns(result);
+                        if (shouldCopy) {
+                            utils.copyToClipboard(result);
+                        }
+                    } catch (err) {
+                        notify(err.message, 'error');
+                    }
+                };
+
+                const copyCronResult = () => {
+                    if (!state.cronResult) {
+                        generateCron(true);
+                        return;
+                    }
+                    utils.copyToClipboard(state.cronResult);
+                };
+
                 const quoteSqlIdentifier = (name) => {
                     const value = String(name || '').trim();
                     if (!value || state.sqlOptions.identifierQuote === 'none') {
@@ -2214,21 +2581,33 @@
 
                 onMounted(() => {
                     applyTheme();
+                    generateCron(false);
+                    window.addEventListener('scroll', updateActiveSection, { passive: true });
+                    updateActiveSection();
                     checkUpdate(true);
+                });
+
+                onUnmounted(() => {
+                    window.removeEventListener('scroll', updateActiveSection);
                 });
 
                 return {
                     ...toRefs(state),
                     ...toRefs(updateState),
                     ...toRefs(toastState),
+                    navItems,
                     currentVersion: CURRENT_VERSION,
                     toastClass,
+                    setActiveSection,
                     handleInput1,
                     handleInput2,
                     handleSqlInput,
                     toggleTheme,
                     handleTransform,
                     handleCalculate,
+                    applyCronPreset,
+                    generateCron,
+                    copyCronResult,
                     generateSQL,
                     getSqlStatementCount,
                     getSqlLineCount,

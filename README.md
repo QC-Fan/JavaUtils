@@ -1,6 +1,6 @@
 ﻿# JavaUtils 数据转换工具
 
-![Version](https://img.shields.io/badge/version-v2.0.2-black)
+![Version](https://img.shields.io/badge/version-v2.0.3-black)
 ![Runtime](https://img.shields.io/badge/runtime-file%3A%2F%2F-lightgrey)
 ![Build](https://img.shields.io/badge/build-none-white)
 
@@ -8,7 +8,7 @@
 
 ## 当前版本
 
-- 版本号：`v2.0.2`
+- 版本号：`v2.0.3`
 - 发布日期：`2026-05-30`
 - 更新内容：整个 UI 界面重构，新增 Vercel 风格工作台、主题切换、SQL 输出增强等能力。
 
@@ -95,7 +95,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\sync-version.ps1 -Version 2.0.2
 
 ## 新版界面
 
-`v2.0.2` 使用 Vercel 风格的深色极简界面：
+`v2.0.3` 使用 Vercel 风格的深色极简界面：
 
 - 顶部全宽置顶 Header
 - Bing 背景图
