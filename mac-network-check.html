@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>网络检测与修复</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --bg: #0b0d10;
+            --panel: #12161c;
+            --panel-2: #171c24;
+            --text: #f4f6f8;
+            --muted: #9aa4b2;
+            --line: #2a313d;
+            --good: #34d399;
+            --warn: #fbbf24;
+            --bad: #fb7185;
+            --accent: #60a5fa;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 16% 0, rgba(96, 165, 250, 0.18), transparent 34rem),
+                linear-gradient(180deg, #0b0d10, #111827);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+        }
+
+        main {
+            width: min(1180px, calc(100vw - 32px));
+            margin: 0 auto;
+            padding: 32px 0;
+        }
+
+        header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        h1 {
+            font-size: clamp(28px, 4vw, 42px);
+            letter-spacing: 0;
+        }
+
+        .sub {
+            margin-top: 10px;
+            max-width: 760px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 16px;
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(18, 22, 28, 0.86);
+            padding: 18px;
+            backdrop-filter: blur(18px);
+        }
+
+        .toolbar,
+        .switcher {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .toolbar {
+            margin-top: 18px;
+        }
+
+        button {
+            min-height: 42px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--panel-2);
+            color: var(--text);
+            padding: 0 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button.primary,
+        button.active {
+            border-color: #dbeafe;
+            background: #eff6ff;
+            color: #0f172a;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .status {
+            display: grid;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 120px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+        }
+
+        .name {
+            font-weight: 800;
+        }
+
+        .detail {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .badge {
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .idle {
+            background: rgba(148, 163, 184, 0.14);
+            color: #cbd5e1;
+        }
+
+        .ok {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--good);
+        }
+
+        .warn {
+            background: rgba(251, 191, 36, 0.14);
+            color: var(--warn);
+        }
+
+        .fail {
+            background: rgba(251, 113, 133, 0.15);
+            color: var(--bad);
+        }
+
+        .cmd {
+            display: grid;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        pre {
+            margin: 0;
+            overflow: auto;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: #06080b;
+            padding: 14px;
+            color: #dbeafe;
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+
+        .copy-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .steps {
+            display: grid;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .step {
+            border-left: 3px solid var(--accent);
+            padding: 4px 0 4px 12px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .notice {
+            margin-top: 14px;
+            border: 1px solid rgba(251, 191, 36, 0.22);
+            border-radius: 14px;
+            background: rgba(251, 191, 36, 0.08);
+            padding: 12px;
+            color: #fde68a;
+            line-height: 1.6;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --panel: #ffffff;
+                --panel-2: #f1f5f9;
+                --text: #0f172a;
+                --muted: #475569;
+                --line: #d8dee8;
+            }
+
+            body {
+                background: linear-gradient(180deg, #f8fafc, #e5edf7);
+            }
+
+            .panel {
+                background: rgba(255, 255, 255, 0.9);
+            }
+
+            pre {
+                background: #0f172a;
+                color: #e0f2fe;
+            }
+        }
+
+        @media (max-width: 860px) {
+            header,
+            .grid {
+                grid-template-columns: 1fr;
+                display: grid;
+            }
+
+            .row {
+                grid-template-columns: 1fr;
+            }
+
+            .badge {
+                width: max-content;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <header>
+            <div>
+                <h1>网络检测与修复</h1>
+                <p class="sub">适合排查“微信、QQ 能聊天，但 Safari、Chrome、Edge 网页打不开”的情况。支持 macOS 和 Windows，页面会检测浏览器网络、DNS 解析、HTTPS 访问和常见站点连通性，并给出对应修复命令。</p>
+                <div class="toolbar">
+                    <div class="switcher" aria-label="系统选择">
+                        <button id="macBtn" data-os="mac">macOS</button>
+                        <button id="windowsBtn" data-os="windows">Windows</button>
+                    </div>
+                    <button class="primary" id="runBtn">开始检测</button>
+                    <button id="copyAllBtn">复制推荐修复命令</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid">
+            <section class="panel">
+                <h2>检测结果</h2>
+                <div class="status" id="results"></div>
+                <div class="notice" id="summary">还没有开始检测。选择系统后点击“开始检测”，一般 10 秒内可以看到结果。</div>
+            </section>
+
+            <aside class="panel">
+                <h2>推荐修复</h2>
+                <div class="steps" id="advice"></div>
+
+                <div class="cmd">
+                    <div class="copy-row">
+                        <h3 id="commandTitle">终端命令</h3>
+                        <button id="copyCmdBtn">复制命令</button>
+                    </div>
+                    <pre id="commands"></pre>
+                </div>
+
+                <div class="notice" id="safetyNote"></div>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        const tests = [
+            {
+                id: 'browser',
+                name: '浏览器状态',
+                detail: '检查浏览器是否认为当前在线。',
+                run: async () => navigator.onLine
+                    ? { ok: true, detail: 'navigator.onLine = true' }
+                    : { ok: false, detail: '浏览器报告离线' }
+            },
+            {
+                id: 'apple',
+                name: 'Apple 网络',
+                detail: '检测 Apple HTTPS 访问。',
+                url: 'https://www.apple.com/library/test/success.html'
+            },
+            {
+                id: 'microsoft',
+                name: '微软网络',
+                detail: '检测 Microsoft HTTPS 访问。',
+                url: 'https://www.microsoft.com/favicon.ico'
+            },
+            {
+                id: 'baidu',
+                name: '国内站点',
+                detail: '检测百度静态资源连通性。',
+                url: 'https://www.baidu.com/favicon.ico'
+            },
+            {
+                id: 'qq',
+                name: '腾讯站点',
+                detail: '检测 QQ 静态资源连通性。',
+                url: 'https://www.qq.com/favicon.ico'
+            },
+            {
+                id: 'doh',
+                name: 'DNS 查询',
+                detail: '通过公共 DNS over HTTPS 查询域名。',
+                run: async () => {
+                    const res = await fetch('https://dns.alidns.com/resolve?name=www.baidu.com&type=A', {
+                        cache: 'no-store'
+                    });
+                    const data = await res.json();
+                    const answers = Array.isArray(data.Answer) ? data.Answer : [];
+                    return answers.length
+                        ? { ok: true, detail: answers.map(item => item.data).join(', ') }
+                        : { ok: false, detail: 'DNS 查询没有返回 A 记录' };
+                }
+            }
+        ];
+
+        const commandsByOs = {
+            mac: [
+                '# 1. 刷新 macOS DNS 缓存',
+                'sudo dscacheutil -flushcache',
+                'sudo killall -HUP mDNSResponder',
+                '',
+                '# 2. 查看当前网络服务名称',
+                'networksetup -listallnetworkservices',
+                '',
+                '# 3. 给 Wi-Fi 设置常用 DNS',
+                'networksetup -setdnsservers Wi-Fi 223.5.5.5 119.29.29.29 8.8.8.8',
+                '',
+                '# 4. 关闭 Wi-Fi 的 HTTP / HTTPS / SOCKS / 自动代理',
+                'networksetup -setwebproxystate Wi-Fi off',
+                'networksetup -setsecurewebproxystate Wi-Fi off',
+                'networksetup -setsocksfirewallproxystate Wi-Fi off',
+                'networksetup -setautoproxystate Wi-Fi off',
+                '',
+                '# 5. 重新获取 DHCP 地址',
+                'sudo ipconfig set en0 DHCP'
+            ].join('\n'),
+            windows: [
+                ':: 请用“以管理员身份运行”的 CMD 执行',
+                '',
+                ':: 1. 刷新 DNS 缓存',
+                'ipconfig /flushdns',
+                '',
+                ':: 2. 重置 WinHTTP 代理',
+                'netsh winhttp reset proxy',
+                '',
+                ':: 3. 重置 Winsock 和 TCP/IP 栈，执行后建议重启电脑',
+                'netsh winsock reset',
+                'netsh int ip reset',
+                '',
+                ':: 4. 查看网络适配器名称',
+                'netsh interface show interface',
+                '',
+                ':: 5. 给 Wi-Fi 设置常用 DNS，如果适配器不叫 Wi-Fi，请把 name 改成实际名称',
+                'netsh interface ip set dns name="Wi-Fi" static 223.5.5.5',
+                'netsh interface ip add dns name="Wi-Fi" 119.29.29.29 index=2',
+                'netsh interface ip add dns name="Wi-Fi" 8.8.8.8 index=3',
+                '',
+                ':: 6. 重新获取 IP 地址',
+                'ipconfig /release',
+                'ipconfig /renew'
+            ].join('\n')
+        };
+
+        const resultState = new Map();
+        const resultsEl = document.getElementById('results');
+        const summaryEl = document.getElementById('summary');
+        const adviceEl = document.getElementById('advice');
+        const commandsEl = document.getElementById('commands');
+        const runBtn = document.getElementById('runBtn');
+        const commandTitle = document.getElementById('commandTitle');
+        const safetyNote = document.getElementById('safetyNote');
+        const osButtons = [...document.querySelectorAll('[data-os]')];
+
+        let currentOs = detectOs();
+
+        function detectOs() {
+            const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || '';
+            return /win/i.test(platform) ? 'windows' : 'mac';
+        }
+
+        function setOs(os) {
+            currentOs = os;
+            osButtons.forEach(button => button.classList.toggle('active', button.dataset.os === os));
+            commandTitle.textContent = os === 'windows' ? 'Windows 命令' : 'macOS 终端命令';
+            commandsEl.textContent = commandsByOs[os];
+            safetyNote.textContent = os === 'windows'
+                ? '网页不能直接修改 Windows 系统网络设置。请复制命令到“以管理员身份运行”的 CMD，或手动检查：设置 → 网络和 Internet → 代理 / 高级网络设置 / DNS。'
+                : '网页不能直接修改 macOS 系统网络设置。请复制命令到“终端”执行，或手动检查：系统设置 → 网络 → Wi-Fi → 详细信息 → DNS / 代理。';
+            buildAdvice();
+        }
+
+        function renderRows() {
+            resultsEl.innerHTML = tests.map(test => {
+                const state = resultState.get(test.id) || { status: 'idle', detail: test.detail };
+                const badgeClass = state.status === 'ok'
+                    ? 'ok'
+                    : state.status === 'fail'
+                        ? 'fail'
+                        : state.status === 'warn'
+                            ? 'warn'
+                            : 'idle';
+                const badgeText = state.status === 'ok'
+                    ? '正常'
+                    : state.status === 'fail'
+                        ? '失败'
+                        : state.status === 'warn'
+                            ? '异常'
+                            : '待检测';
+
+                return `
+                    <div class="row">
+                        <div class="name">${test.name}</div>
+                        <div class="detail">${state.detail}</div>
+                        <div class="badge ${badgeClass}">${badgeText}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function timeout(ms) {
+            return new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('请求超时')), ms);
+            });
+        }
+
+        async function fetchNoCors(url) {
+            await Promise.race([
+                fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), {
+                    mode: 'no-cors',
+                    cache: 'no-store'
+                }),
+                timeout(7000)
+            ]);
+            return { ok: true, detail: '请求已发出并收到浏览器响应' };
+        }
+
+        async function runOne(test) {
+            resultState.set(test.id, { status: 'idle', detail: '检测中...' });
+            renderRows();
+
+            try {
+                const result = test.run
+                    ? await Promise.race([test.run(), timeout(7000)])
+                    : await fetchNoCors(test.url);
+                resultState.set(test.id, {
+                    status: result.ok ? 'ok' : 'fail',
+                    detail: result.detail || '正常'
+                });
+            } catch (error) {
+                resultState.set(test.id, {
+                    status: 'fail',
+                    detail: error.message || '请求失败'
+                });
+            }
+            renderRows();
+        }
+
+        function buildAdvice() {
+            const failed = [...resultState.entries()]
+                .filter(([, value]) => value.status === 'fail')
+                .map(([id]) => id);
+
+            const steps = [];
+            if (!failed.length) {
+                steps.push('检测项都通过。如果偶尔网页打不开，优先重启浏览器、切换 Wi-Fi，或临时关闭代理/VPN 再试。');
+            }
+            if (failed.includes('doh') || failed.includes('baidu') || failed.includes('qq')) {
+                steps.push('优先处理 DNS：刷新 DNS 缓存，并把 DNS 改成 223.5.5.5 / 119.29.29.29 / 8.8.8.8。');
+            }
+            if (failed.includes('apple') && failed.includes('microsoft') && (failed.includes('baidu') || failed.includes('qq'))) {
+                steps.push('多个 HTTPS 站点失败，重点检查系统代理、VPN、Clash、Surge、公司代理是否残留。');
+            }
+            if (failed.includes('browser')) {
+                steps.push('浏览器报告离线，先关闭再打开网络，或重启系统网络服务。');
+            }
+            if (currentOs === 'windows') {
+                steps.push('Windows 常见路径：设置 → 网络和 Internet → 代理，关闭不需要的代理；也可以用管理员 CMD 执行右侧命令。');
+            } else {
+                steps.push('macOS 常见路径：系统设置 → 网络 → Wi-Fi → 详细信息 → DNS / 代理。');
+            }
+
+            adviceEl.innerHTML = steps.map(item => `<div class="step">${item}</div>`).join('');
+            summaryEl.textContent = failed.length
+                ? `发现 ${failed.length} 个异常项。建议按右侧步骤处理，通常 DNS 或代理最可疑。`
+                : '检测完成，暂未发现明显异常。';
+        }
+
+        async function runAll() {
+            runBtn.disabled = true;
+            runBtn.textContent = '检测中...';
+            resultState.clear();
+            renderRows();
+            summaryEl.textContent = '正在检测，请稍等...';
+            adviceEl.innerHTML = '';
+
+            for (const test of tests) {
+                await runOne(test);
+            }
+
+            buildAdvice();
+            runBtn.disabled = false;
+            runBtn.textContent = '重新检测';
+        }
+
+        async function copyText(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                summaryEl.textContent = '已复制到剪贴板。';
+            } catch (error) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                summaryEl.textContent = '已复制到剪贴板。';
+            }
+        }
+
+        document.getElementById('runBtn').addEventListener('click', runAll);
+        document.getElementById('copyCmdBtn').addEventListener('click', () => copyText(commandsEl.textContent));
+        document.getElementById('copyAllBtn').addEventListener('click', () => copyText(commandsEl.textContent));
+        osButtons.forEach(button => button.addEventListener('click', () => setOs(button.dataset.os)));
+
+        renderRows();
+        setOs(currentOs);
+    </script>
+</body>
+
+</html>
